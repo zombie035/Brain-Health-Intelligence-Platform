@@ -1,0 +1,124 @@
+
+<%- include("partials/header", { title }) %>
+
+<section class="page-heading">
+    <span class="tag">HEALTH PROFILE</span>
+    <h1>Tell us about your lifestyle</h1>
+    <p>
+        These details help us understand factors that
+        may be relevant to your brain health.
+    </p>
+</section>
+
+<form action="/health" method="POST">
+
+    <input
+        type="hidden"
+        name="assessmentId"
+        value="<%= assessmentId %>"
+    >
+
+    <div class="card">
+
+        <h2>Personal Information</h2>
+
+        <label>Age</label>
+        <input
+            type="number"
+            name="age"
+            min="18"
+            max="120"
+            required
+        >
+
+        <label>Preferred Assessment Language</label>
+
+        <select name="language" required>
+            <option value="">Select language</option>
+            <option value="English">English</option>
+            <option value="Arabic">Arabic</option>
+            <option value="Tamil">Tamil</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <label>Education Level</label>
+
+        <select name="educationLevel" required>
+            <option value="">Select education</option>
+            <option value="School">School</option>
+            <option value="Undergraduate">Undergraduate</option>
+            <option value="Postgraduate">Postgraduate</option>
+            <option value="Other">Other</option>
+        </select>
+
+    </div>
+
+    <div class="card">
+
+        <h2>Sleep and Lifestyle</h2>
+
+        <label>Average sleep hours per day</label>
+
+        <input
+            type="number"
+            name="sleepHours"
+            min="0"
+            max="24"
+            step="0.5"
+            required
+        >
+
+        <label>Daily physical activity (minutes)</label>
+
+        <input
+            type="number"
+            name="exerciseMinutes"
+            min="0"
+            max="1440"
+            required
+        >
+
+        <label>Current perceived stress level</label>
+
+        <select name="stressLevel" required>
+            <option value="">Select stress level</option>
+            <option value="1">1 - Very low</option>
+            <option value="2">2 - Low</option>
+            <option value="3">3 - Moderate</option>
+            <option value="4">4 - High</option>
+            <option value="5">5 - Very high</option>
+        </select>
+
+    </div>
+
+    <div class="card">
+
+        <h2>Family History</h2>
+
+        <p>
+            Is there a known family history of dementia
+            or cognitive impairment?
+        </p>
+
+        <select name="familyHistory" required>
+            <option value="">Select an option</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+            <option value="unknown">I don't know</option>
+        </select>
+
+    </div>
+
+    <button type="submit" class="btn">
+        Generate My Report →
+    </button>
+
+    <p class="disclaimer">
+        Information is collected for this hackathon
+        prototype and does not establish medical risk.
+    </p>
+
+</form>
+
+<%- include("partials/footer") %>

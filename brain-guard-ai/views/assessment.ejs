@@ -1,0 +1,131 @@
+
+<%- include("partials/header", { title }) %>
+
+<section class="page-heading">
+    <span class="tag">COGNITIVE ASSESSMENT</span>
+    <h1>Let's understand your cognitive performance</h1>
+    <p>Complete all three activities below.</p>
+</section>
+
+<form action="/assessment" method="POST" id="assessmentForm">
+
+    <div class="card">
+
+        <h2>Personal Information</h2>
+
+        <label>Full Name</label>
+        <input type="text" name="name" required maxlength="80">
+
+        <label>Email Address</label>
+        <input type="email" name="email" required maxlength="120">
+
+    </div>
+
+    <div class="card">
+
+        <h2>1. Memory Test</h2>
+
+        <p>
+            Memorize the five words displayed below.
+            You have 15 seconds.
+        </p>
+
+        <div id="wordList" class="word-list" hidden>
+            River &nbsp; Apple &nbsp; Chair &nbsp; Window &nbsp; Garden
+        </div>
+
+        <button type="button" id="memoryStart" class="btn">
+            Start Memory Test
+        </button>
+
+        <p id="memoryTimer"></p>
+
+        <div id="recallSection" hidden>
+
+            <label>Enter the words you remember</label>
+
+            <textarea
+                id="recallWords"
+                name="recallWords"
+                rows="3"
+                placeholder="Enter the words separated by commas"
+                required
+                disabled
+            ></textarea>
+
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <h2>2. Attention Test</h2>
+
+        <p>
+            Count how many times the number 3 appears:
+        </p>
+
+        <div class="number-sequence">
+            2 &nbsp; 5 &nbsp; 3 &nbsp; 8 &nbsp; 3 &nbsp;
+            1 &nbsp; 4 &nbsp; 3 &nbsp; 9
+        </div>
+
+        <label>Your answer</label>
+
+        <input
+            type="number"
+            name="attentionCount"
+            id="attentionCount"
+            min="0"
+            max="9"
+            required
+        >
+
+    </div>
+
+    <div class="card">
+
+        <h2>3. Reaction Time Test</h2>
+
+        <p>
+            Click the button when it appears.
+            Do not click before it appears.
+        </p>
+
+        <button type="button" id="reactionStart" class="btn">
+            Start Reaction Test
+        </button>
+
+        <button
+            type="button"
+            id="reactionTarget"
+            class="reaction-target"
+            hidden
+        >
+            CLICK NOW!
+        </button>
+
+        <p id="reactionStatus"></p>
+
+        <input
+            type="hidden"
+            name="reactionMs"
+            id="reactionMs"
+        >
+
+    </div>
+
+    <button type="submit" id="submitBtn" class="btn" disabled>
+        Submit Assessment →
+    </button>
+
+    <p class="disclaimer">
+        These activities are experimental and are not
+        clinically validated cognitive screening tests.
+    </p>
+
+</form>
+
+<script src="/js/assessment.js"></script>
+
+<%- include("partials/footer") %>

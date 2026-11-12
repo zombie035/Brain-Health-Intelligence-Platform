@@ -1,0 +1,111 @@
+
+<%- include("partials/header", { title }) %>
+
+<section class="page-heading">
+
+    <span class="tag">YOUR BRAIN HEALTH REPORT</span>
+
+    <h1>Hello, <%= assessment.name %>!</h1>
+
+    <p>
+        Here is your cognitive assessment and health profile.
+    </p>
+
+</section>
+
+<div class="dashboard-grid">
+
+    <div class="stat-card">
+        <p>Memory Recall</p>
+        <h2>
+            <%= assessment.memoryCorrect %> / 5
+        </h2>
+        <span>Correctly recalled words</span>
+    </div>
+
+    <div class="stat-card">
+        <p>Attention Test</p>
+        <h2>
+            <%= assessment.attentionCorrect ? "Correct" : "Incorrect" %>
+        </h2>
+        <span>Number counting task</span>
+    </div>
+
+    <div class="stat-card">
+        <p>Reaction Time</p>
+        <h2>
+            <%= assessment.reactionMs %> ms
+        </h2>
+        <span>Recorded response time</span>
+    </div>
+
+    <div class="stat-card">
+        <p>Sleep Duration</p>
+        <h2>
+            <%= health.sleepHours %> hrs
+        </h2>
+        <span>Self-reported daily average</span>
+    </div>
+
+</div>
+
+<div class="card">
+
+    <h2>Health Profile</h2>
+
+    <div class="profile-grid">
+
+        <p><strong>Age:</strong> <%= health.age %></p>
+
+        <p><strong>Language:</strong>
+            <%= health.language %>
+        </p>
+
+        <p><strong>Education:</strong>
+            <%= health.educationLevel %>
+        </p>
+
+        <p><strong>Exercise:</strong>
+            <%= health.exerciseMinutes %> minutes/day
+        </p>
+
+        <p><strong>Stress Level:</strong>
+            <%= health.stressLevel %> / 5
+        </p>
+
+        <p><strong>Family History:</strong>
+            <%= health.familyHistory %>
+        </p>
+
+    </div>
+
+</div>
+
+<div class="card report-card">
+
+    <h2>Assessment Summary</h2>
+
+    <p>
+        Your first assessment has been successfully recorded.
+        This information can be used to establish a personal
+        baseline for future comparisons.
+    </p>
+
+    <p>
+        Complete repeat assessments under similar conditions
+        to monitor changes over time.
+    </p>
+
+    <p class="disclaimer">
+        These results are experimental task measurements,
+        not a validated cognitive screening score, diagnosis
+        or clinical risk classification.
+    </p>
+
+</div>
+
+<a href="/assessment" class="btn">
+    Take Another Assessment →
+</a>
+
+<%- include("partials/footer") %>
