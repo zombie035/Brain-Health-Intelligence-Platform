@@ -8,6 +8,9 @@
     <title><%= title || "BrainGuard AI" %></title>
 
     <link rel="stylesheet" href="/css/style.css">
+    <% if (typeof pageStylesheet !== "undefined" && pageStylesheet) { %>
+        <link rel="stylesheet" href="/css/<%= pageStylesheet %>">
+    <% } %>
 </head>
 <body>
 

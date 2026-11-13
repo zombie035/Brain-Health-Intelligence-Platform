@@ -9,6 +9,7 @@ const routes = require("./routes");
 
 const app = express();
 const eyeTrackingRoutes = require("./routes/eyeTracking");
+const eyeAssessmentRoutes = require("./routes/eyeAssessment");
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", eyeTrackingRoutes);
+app.use("/", eyeAssessmentRoutes);
 app.use("/", routes);
 
 app.use((req, res) => {

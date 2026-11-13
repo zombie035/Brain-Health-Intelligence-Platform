@@ -1,0 +1,95 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">EXPERIMENTAL EYE MOVEMENT TESTS</span>
+    <h1>Eye Assessment</h1>
+    <p>
+        Choose a test to record experimental gaze measurements for
+        <strong><%= assessment.name %></strong>.
+    </p>
+    <a class="eye-back-link" href="/dashboard/<%= assessment._id %>">
+        Back to dashboard
+    </a>
+</section>
+
+<section class="eye-test-grid" aria-label="Available eye assessments">
+    <article class="eye-test-card">
+        <span class="eye-test-number">01</span>
+        <h2>Attention Tracking Test</h2>
+        <p>
+            Follow a series of screen targets while GazeMap records calibrated
+            gaze samples and their timing.
+        </p>
+        <ul>
+            <li>About 20 seconds</li>
+            <li>Requires a webcam and saved GazeMap calibration</li>
+            <li>Stimulus appears in a fullscreen window</li>
+        </ul>
+        <a
+            class="btn"
+            href="/eye-assessment/<%= assessment._id %>/attention"
+        >
+            View instructions
+        </a>
+    </article>
+
+    <article class="eye-test-card">
+        <span class="eye-test-number">02</span>
+        <h2>Saccadic Eye Movement</h2>
+        <p>
+            Shift your gaze from the center fixation mark to left and right
+            targets while GazeMap records calibrated samples.
+        </p>
+        <ul>
+            <li>12 balanced left/right trials</li>
+            <li>Requires a webcam and saved GazeMap calibration</li>
+            <li>Stimulus appears in a fullscreen window</li>
+        </ul>
+        <a
+            class="btn"
+            href="/eye-assessment/<%= assessment._id %>/saccadic"
+        >
+            View instructions
+        </a>
+    </article>
+
+    <article class="eye-test-card eye-test-card-muted">
+        <span class="eye-test-number">03</span>
+        <h2>Smooth Pursuit</h2>
+        <p>This assessment is not available in this implementation phase.</p>
+        <button type="button" disabled>Coming later</button>
+    </article>
+</section>
+
+<section class="card eye-previous-results">
+    <h2>Recent Eye Assessments</h2>
+    <% if (results.length) { %>
+        <div class="eye-results-list">
+            <% results.forEach(result => { %>
+                <article class="eye-result-row">
+                    <div>
+                        <strong><%= result.status %></strong>
+                        <span>
+                            <%= result.assessmentType %> | <%= result.sessionId %>
+                        </span>
+                    </div>
+                    <time datetime="<%= result.createdAt.toISOString() %>">
+                        <%= new Date(result.createdAt).toLocaleString("en-IN") %>
+                    </time>
+                    <a href="/eye-assessment/<%= assessment._id %>/results/<%= encodeURIComponent(result.sessionId) %>">
+                        View
+                    </a>
+                </article>
+            <% }); %>
+        </div>
+    <% } else { %>
+        <p>No eye assessment results have been saved yet.</p>
+    <% } %>
+</section>
+
+<p class="disclaimer">
+    These measurements are experimental observations, not a diagnosis or
+    clinically validated screening result.
+</p>
+
+<%- include("partials/footer") %>

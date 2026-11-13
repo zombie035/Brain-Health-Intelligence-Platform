@@ -1,0 +1,258 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 02 RESULTS</span>
+    <h1>Saccadic Eye Movement Results</h1>
+    <p>
+        <%= new Date(result.startedAt).toLocaleString("en-IN") %>
+        <span class="eye-status-pill eye-status-<%= result.status %>">
+            <%= result.status %>
+        </span>
+    </p>
+</section>
+
+<section class="card">
+    <p><%= result.message %></p>
+    <% if (result.status !== "completed") { %>
+        <p>
+            This session did not complete normally. Treat any available
+            measurements as incomplete.
+        </p>
+    <% } %>
+
+    <div class="eye-metric-grid">
+        <article class="eye-metric">
+            <span>Test duration</span>
+            <strong>
+                <%= result.durationSeconds == null
+                    ? "Unavailable"
+                    : `${result.durationSeconds} s` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Displayed trials</span>
+            <strong>
+                <%= result.measurements.totalTrials == null
+                    ? "Unavailable"
+                    : result.measurements.totalTrials %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Valid gaze samples</span>
+            <strong>
+                <%= result.measurements.validGazeSamples == null
+                    ? "Unavailable"
+                    : result.measurements.validGazeSamples %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Target acquisition rate</span>
+            <strong>
+                <%= result.measurements.targetAcquisitionRatePct == null
+                    ? "Unavailable"
+                    : `${result.measurements.targetAcquisitionRatePct}%` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Mean latency (acquired trials)</span>
+            <strong>
+                <%= result.measurements.meanResponseLatencyMs == null
+                    ? "Unavailable"
+                    : `${result.measurements.meanResponseLatencyMs} ms` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Mean endpoint error</span>
+            <strong>
+                <%= result.measurements.meanEndpointErrorPx == null
+                    ? "Unavailable"
+                    : `${result.measurements.meanEndpointErrorPx} px` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Missing / invalid samples</span>
+            <strong>
+                <%= result.measurements.missingSamplePercentage == null
+                    ? "Unavailable"
+                    : `${result.measurements.missingSamplePercentage}%` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Observed sample rate</span>
+            <strong>
+                <%= result.sampleQuality.sampleRateHz == null
+                    ? "Unavailable"
+                    : `${result.sampleQuality.sampleRateHz} Hz` %>
+            </strong>
+        </article>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Sample quality and method</h2>
+    <p>
+        Target acquisition requires 3 consecutive valid gaze samples within
+        <%= result.sampleQuality.targetRadiusDegrees == null
+            ? "an unavailable radius"
+            : `${result.sampleQuality.targetRadiusDegrees}°` %>
+        of the target spanning at least 100 ms. Response latency is the time
+        from target onset to the first sample in that sustained entry.
+        Acquisition rate uses adequately sampled trials, and endpoint error is
+        the median gaze-to-target distance in each trial's final 250 ms.
+    </p>
+    <% if (result.sampleQuality.qualityNotes.length) { %>
+        <ul class="eye-quality-notes">
+            <% result.sampleQuality.qualityNotes.forEach(note => { %>
+                <li><%= note %></li>
+            <% }); %>
+        </ul>
+    <% } %>
+    <% if (result.metricExplanations.responseLatency) { %>
+        <p class="eye-explanation">
+            <%= result.metricExplanations.responseLatency %>
+        </p>
+    <% } %>
+    <% if (result.metricExplanations.endpointError) { %>
+        <p class="eye-explanation">
+            <%= result.metricExplanations.endpointError %>
+        </p>
+    <% } %>
+    <% if (result.metricExplanations.targetAcquisition) { %>
+        <p class="eye-explanation">
+            <%= result.metricExplanations.targetAcquisition %>
+        </p>
+    <% } %>
+    <p>
+        Calibration:
+        <%= result.calibration.available
+            ? `${result.calibration.mappingMethod || "saved GazeMap map"} (${result.calibration.calibrationPointCount} points)`
+            : "unavailable" %>
+    </p>
+</section>
+
+<section class="card">
+    <h2>Trial measurements</h2>
+    <div class="eye-chart-grid">
+        <div class="eye-chart-wrap">
+            <h3>Endpoint gaze error by trial</h3>
+            <canvas id="saccadicEndpointChart"></canvas>
+        </div>
+        <div class="eye-chart-wrap">
+            <h3>Response latency by trial</h3>
+            <canvas id="saccadicLatencyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="eye-table-scroll">
+        <table class="eye-target-table">
+            <thead>
+                <tr>
+                    <th>Trial</th>
+                    <th>Direction</th>
+                    <th>Acquired</th>
+                    <th>Response latency (ms)</th>
+                    <th>Endpoint error (px)</th>
+                    <th>Valid samples</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% result.targets.forEach(target => { %>
+                    <tr>
+                        <td><%= target.id %></td>
+                        <td><%= target.side || "Unavailable" %></td>
+                        <td>
+                            <%= target.acquired == null
+                                ? "Unavailable"
+                                : target.acquired ? "Yes" : "No" %>
+                        </td>
+                        <td>
+                            <%= target.responseLatencyMs == null
+                                ? "Unavailable"
+                                : target.responseLatencyMs %>
+                        </td>
+                        <td>
+                            <%= target.endpointErrorPx == null
+                                ? "Unavailable"
+                                : target.endpointErrorPx %>
+                        </td>
+                        <td>
+                            <%= target.validSampleCount == null
+                                ? "Unavailable"
+                                : target.validSampleCount %>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<a class="btn" href="/eye-assessment/<%= assessment._id %>">
+    Return to Eye Assessment
+</a>
+<a class="eye-back-link" href="/dashboard/<%= assessment._id %>">
+    Dashboard
+</a>
+
+<p class="disclaimer">
+    These measurements are experimental observations, not a diagnosis or
+    clinically validated screening result. Eye movements do not directly
+    measure brain activity.
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const targetMeasurements = <%- JSON.stringify(result.targets).replace(/</g, "\\u003c") %>;
+    const chartLabels = targetMeasurements.map(target => target.id);
+    const chartOptions = {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { x: { beginAtZero: true } }
+    };
+
+    new Chart(document.getElementById("saccadicEndpointChart"), {
+        type: "bar",
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: "Endpoint gaze error (pixels)",
+                data: targetMeasurements.map(target => target.endpointErrorPx),
+                backgroundColor: "#3b82f6",
+                borderRadius: 6
+            }]
+        },
+        options: {
+            ...chartOptions,
+            scales: {
+                x: {
+                    ...chartOptions.scales.x,
+                    title: { display: true, text: "Error (pixels)" }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById("saccadicLatencyChart"), {
+        type: "bar",
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: "Response latency (ms)",
+                data: targetMeasurements.map(target => target.responseLatencyMs),
+                backgroundColor: "#10b981",
+                borderRadius: 6
+            }]
+        },
+        options: {
+            ...chartOptions,
+            scales: {
+                x: {
+                    ...chartOptions.scales.x,
+                    title: { display: true, text: "Latency (ms)" }
+                }
+            }
+        }
+    });
+</script>
+<%- include("partials/footer") %>

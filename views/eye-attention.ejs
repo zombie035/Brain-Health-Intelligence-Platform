@@ -1,0 +1,77 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 01</span>
+    <h1>Attention Tracking Test</h1>
+    <p>
+        Follow the targets with your eyes. The test records the target and
+        calibrated gaze coordinates in the same fullscreen window.
+    </p>
+</section>
+
+<section class="card eye-instructions">
+    <h2>Before you begin</h2>
+    <ol>
+        <li>Allow camera access to the GazeMap process if prompted.</li>
+        <li>Sit comfortably with your face visible and keep your head still.</li>
+        <li>Use the screen with your saved GazeMap calibration.</li>
+        <li>Click Start Test, then focus the GazeMap window and press Space.</li>
+        <li>Follow each dot with your eyes; press Esc in that window to cancel.</li>
+    </ol>
+    <p>
+        The fullscreen stimulus opens in a separate window. Keep this browser
+        page open to see progress and results.
+    </p>
+</section>
+
+<section
+    id="attentionTest"
+    class="card eye-test-runner"
+    data-assessment-id="<%= assessment._id %>"
+>
+    <div class="eye-runner-heading">
+        <div>
+            <h2>Ready when you are</h2>
+            <p>Assessment for <strong><%= assessment.name %></strong></p>
+        </div>
+        <a href="/eye-assessment/<%= assessment._id %>">Back to assessments</a>
+    </div>
+
+    <div class="eye-runner-actions">
+        <button class="btn" type="button" id="startAttentionTest">
+            Start Test
+        </button>
+        <button class="eye-cancel-button" type="button" id="cancelAttentionTest" hidden>
+            Cancel Test
+        </button>
+    </div>
+
+    <p
+        id="attentionStatus"
+        class="eye-status"
+        role="status"
+        aria-live="polite"
+    >
+        Ready. The webcam starts only after you click Start Test.
+    </p>
+
+    <div
+        class="eye-progress-track"
+        role="progressbar"
+        aria-label="Attention test progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+    >
+        <div id="attentionProgress" class="eye-progress-fill"></div>
+    </div>
+    <p id="attentionProgressText" class="eye-progress-text">0%</p>
+</section>
+
+<p class="disclaimer">
+    This experimental eye-movement task does not measure brain activity and
+    cannot diagnose neurological conditions.
+</p>
+
+<script src="/js/eye-tests/attention.js" defer></script>
+<%- include("partials/footer") %>

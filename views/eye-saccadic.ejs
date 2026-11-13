@@ -1,0 +1,83 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 02</span>
+    <h1>Saccadic Eye Movement Test</h1>
+    <p>
+        Fixate the center mark, then shift your eyes to the left or right
+        target. GazeMap records target timing and calibrated gaze coordinates.
+    </p>
+</section>
+
+<section class="card eye-instructions">
+    <h2>Before you begin</h2>
+    <ol>
+        <li>Allow camera access to the GazeMap process if prompted.</li>
+        <li>Sit comfortably with your face visible and keep your head still.</li>
+        <li>Use the screen with your saved GazeMap calibration.</li>
+        <li>Click Start Test, focus the GazeMap window, and press Space.</li>
+        <li>Look at the center mark, then quickly shift your eyes to each side target. Press Esc to cancel.</li>
+    </ol>
+    <p>
+        The test runs 12 balanced left/right trials in a fullscreen stimulus
+        window. Keep this browser page open to see progress and results.
+    </p>
+</section>
+
+<section
+    id="saccadicTest"
+    class="card eye-test-runner"
+    data-assessment-id="<%= assessment._id %>"
+>
+    <div class="eye-runner-heading">
+        <div>
+            <h2>Ready when you are</h2>
+            <p>Assessment for <strong><%= assessment.name %></strong></p>
+        </div>
+        <a href="/eye-assessment/<%= assessment._id %>">Back to assessments</a>
+    </div>
+
+    <div class="eye-runner-actions">
+        <button class="btn" type="button" id="startSaccadicTest">
+            Start Test
+        </button>
+        <button
+            class="eye-cancel-button"
+            type="button"
+            id="cancelSaccadicTest"
+            hidden
+        >
+            Cancel Test
+        </button>
+    </div>
+
+    <p
+        id="saccadicStatus"
+        class="eye-status"
+        role="status"
+        aria-live="polite"
+    >
+        Ready. The webcam starts only after you click Start Test.
+    </p>
+
+    <div
+        class="eye-progress-track"
+        role="progressbar"
+        aria-label="Saccadic test progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+    >
+        <div id="saccadicProgress" class="eye-progress-fill"></div>
+    </div>
+    <p id="saccadicProgressText" class="eye-progress-text">0%</p>
+</section>
+
+<p class="disclaimer">
+    This experimental eye-movement task does not measure brain activity and
+    cannot diagnose neurological conditions. Response timing is limited by the
+    webcam sampling rate.
+</p>
+
+<script src="/js/eye-tests/saccadic.js" defer></script>
+<%- include("partials/footer") %>

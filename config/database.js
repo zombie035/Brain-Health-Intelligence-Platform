@@ -1,7 +1,6 @@
-
 const dns = require("node:dns");
 
-// Use public DNS resolvers for MongoDB Atlas SRV lookup
+// Configure DNS before Mongoose is loaded.
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 const mongoose = require("mongoose");

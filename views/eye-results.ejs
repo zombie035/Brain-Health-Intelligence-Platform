@@ -1,0 +1,266 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 01 RESULTS</span>
+    <h1>Attention Tracking Results</h1>
+    <p>
+        <%= new Date(result.startedAt).toLocaleString("en-IN") %>
+        <span class="eye-status-pill eye-status-<%= result.status %>">
+            <%= result.status %>
+        </span>
+    </p>
+</section>
+
+<section class="card">
+    <p><%= result.message %></p>
+    <% if (result.status !== "completed") { %>
+        <p>
+            This session did not complete normally. Treat any available
+            measurements as incomplete.
+        </p>
+    <% } %>
+
+    <div class="eye-metric-grid">
+        <article class="eye-metric">
+            <span>Test duration</span>
+            <strong>
+                <%= result.durationSeconds == null
+                    ? "Unavailable"
+                    : `${result.durationSeconds} s` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Displayed targets</span>
+            <strong>
+                <%= result.measurements.numberOfTargetsDisplayed == null
+                    ? "Unavailable"
+                    : result.measurements.numberOfTargetsDisplayed %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Valid gaze samples</span>
+            <strong>
+                <%= result.measurements.validGazeSamples == null
+                    ? "Unavailable"
+                    : result.measurements.validGazeSamples %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Missing / invalid samples</span>
+            <strong>
+                <%= result.measurements.missingSamplePercentage == null
+                    ? "Unavailable"
+                    : `${result.measurements.missingSamplePercentage}%` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Detected fixations</span>
+            <strong>
+                <%= result.measurements.fixationCount == null
+                    ? "Unavailable"
+                    : result.measurements.fixationCount %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Average fixation duration</span>
+            <strong>
+                <%= result.measurements.averageFixationDurationMs == null
+                    ? "Unavailable"
+                    : `${result.measurements.averageFixationDurationMs} ms` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Average gaze-to-target distance</span>
+            <strong>
+                <%= result.measurements.averageGazeToTargetDistancePx == null
+                    ? "Unavailable"
+                    : `${result.measurements.averageGazeToTargetDistancePx} px` %>
+            </strong>
+        </article>
+        <article class="eye-metric">
+            <span>Target fixation consistency</span>
+            <strong>
+                <%= result.measurements.targetFixationConsistencyPct == null
+                    ? "Unavailable"
+                    : `${result.measurements.targetFixationConsistencyPct}%` %>
+            </strong>
+        </article>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Sample quality and method</h2>
+    <p>
+        Observed gaze sample rate:
+        <strong>
+            <%= result.sampleQuality.sampleRateHz == null
+                ? "Unavailable"
+                : `${result.sampleQuality.sampleRateHz} Hz` %>
+        </strong>
+    </p>
+    <p>
+        Fixation detection:
+        <strong><%= result.sampleQuality.fixationMethod || "Unavailable" %></strong>,
+        <%= result.sampleQuality.dispersionThresholdDegrees == null
+            ? "threshold unavailable"
+            : `${result.sampleQuality.dispersionThresholdDegrees}° dispersion` %>,
+        minimum
+        <%= result.sampleQuality.minimumFixationDurationMs == null
+            ? "unavailable"
+            : `${result.sampleQuality.minimumFixationDurationMs} ms` %>.
+    </p>
+    <% if (result.sampleQuality.qualityNotes.length) { %>
+        <ul class="eye-quality-notes">
+            <% result.sampleQuality.qualityNotes.forEach(note => { %>
+                <li><%= note %></li>
+            <% }); %>
+        </ul>
+    <% } %>
+    <% if (result.metricExplanations.fixationAnalysis) { %>
+        <p class="eye-explanation">
+            <%= result.metricExplanations.fixationAnalysis %>
+        </p>
+    <% } %>
+    <p>
+        Calibration:
+        <%= result.calibration.available
+            ? `${result.calibration.mappingMethod || "saved GazeMap map"} (${result.calibration.calibrationPointCount} points)`
+            : "unavailable" %>
+    </p>
+    <p>
+        Target fixation consistency uses
+        <%= result.sampleQuality.targetsWithSufficientGazeSamples == null
+            ? "an unavailable number of targets"
+            : result.sampleQuality.targetsWithSufficientGazeSamples %>
+        targets with sufficient samples.
+    </p>
+</section>
+
+<section class="card">
+    <h2>Target measurements</h2>
+    <div class="eye-chart-grid">
+        <div class="eye-chart-wrap">
+            <h3>Gaze-to-target distance by target</h3>
+            <canvas id="targetErrorChart"></canvas>
+        </div>
+        <div class="eye-chart-wrap">
+            <h3>Longest detected fixation by target</h3>
+            <canvas id="targetFixationChart"></canvas>
+        </div>
+    </div>
+
+    <div class="eye-table-scroll">
+        <table class="eye-target-table">
+            <thead>
+                <tr>
+                    <th>Target</th>
+                    <th>Gaze error (px)</th>
+                    <th>Fixations</th>
+                    <th>Fixation at target</th>
+                    <th>Longest fixation (ms)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% result.targets.forEach(target => { %>
+                    <tr>
+                        <td><%= target.id %></td>
+                        <td>
+                            <%= target.averageGazeToTargetDistancePx == null
+                                ? "Unavailable"
+                                : target.averageGazeToTargetDistancePx %>
+                        </td>
+                        <td>
+                            <%= target.fixationCount == null
+                                ? "Unavailable"
+                                : target.fixationCount %>
+                        </td>
+                        <td>
+                            <%= target.fixationDetected == null
+                                ? "Unavailable"
+                                : target.fixationDetected ? "Yes" : "No" %>
+                        </td>
+                        <td>
+                            <%= target.fixationDurationMs == null
+                                ? "Unavailable"
+                                : target.fixationDurationMs %>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<a class="btn" href="/eye-assessment/<%= assessment._id %>">
+    Return to Eye Assessment
+</a>
+<a class="eye-back-link" href="/dashboard/<%= assessment._id %>">
+    Dashboard
+</a>
+
+<p class="disclaimer">
+    These measurements are experimental observations, not a diagnosis or
+    clinically validated screening result. Eye movements do not directly
+    measure brain activity.
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const targetMeasurements = <%- JSON.stringify(result.targets).replace(/</g, "\\u003c") %>;
+    const chartLabels = targetMeasurements.map(target => target.id);
+    const chartOptions = {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { x: { beginAtZero: true } }
+    };
+
+    new Chart(document.getElementById("targetErrorChart"), {
+        type: "bar",
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: "Average gaze error (pixels)",
+                data: targetMeasurements.map(target =>
+                    target.averageGazeToTargetDistancePx
+                ),
+                backgroundColor: "#3b82f6",
+                borderRadius: 6
+            }]
+        },
+        options: {
+            ...chartOptions,
+            scales: {
+                x: {
+                    ...chartOptions.scales.x,
+                    title: { display: true, text: "Distance (pixels)" }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById("targetFixationChart"), {
+        type: "bar",
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: "Longest fixation (ms)",
+                data: targetMeasurements.map(target =>
+                    target.fixationDurationMs
+                ),
+                backgroundColor: "#10b981",
+                borderRadius: 6
+            }]
+        },
+        options: {
+            ...chartOptions,
+            scales: {
+                x: {
+                    ...chartOptions.scales.x,
+                    title: { display: true, text: "Duration (ms)" }
+                }
+            }
+        }
+    });
+</script>
+<%- include("partials/footer") %>
