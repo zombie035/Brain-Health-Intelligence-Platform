@@ -1,99 +1,557 @@
-
 <%- include("partials/header", { title }) %>
 
 <section class="page-heading">
-
     <span class="tag">YOUR BRAIN HEALTH REPORT</span>
-
     <h1>Hello, <%= assessment.name %>!</h1>
-
-    <p>
-        Here is your cognitive assessment and health profile.
-    </p>
-
+    <a href="/history/<%= assessment._id %>" class="back-button">
+    View Assessment History
+    </a>
+    <p>Here is your cognitive assessment and health profile.</p>
 </section>
 
 <div class="dashboard-grid">
 
     <div class="stat-card">
         <p>Memory Recall</p>
-        <h2>
-            <%= assessment.memoryCorrect %> / 5
-        </h2>
+        <h2><%= assessment.memoryCorrect %> / <%= assessment.memoryTotal %></h2>
         <span>Correctly recalled words</span>
     </div>
 
     <div class="stat-card">
         <p>Attention Test</p>
-        <h2>
-            <%= assessment.attentionCorrect ? "Correct" : "Incorrect" %>
-        </h2>
+        <h2><%= assessment.attentionCorrect ? "Correct" : "Incorrect" %></h2>
         <span>Number counting task</span>
     </div>
 
     <div class="stat-card">
         <p>Reaction Time</p>
-        <h2>
-            <%= assessment.reactionMs %> ms
-        </h2>
+        <h2><%= assessment.reactionMs %> ms</h2>
         <span>Recorded response time</span>
     </div>
 
     <div class="stat-card">
         <p>Sleep Duration</p>
-        <h2>
-            <%= health.sleepHours %> hrs
-        </h2>
+        <h2><%= healthProfile ? healthProfile.sleepHours : "N/A" %> hrs</h2>
         <span>Self-reported daily average</span>
     </div>
 
 </div>
 
 <div class="card">
-
     <h2>Health Profile</h2>
 
     <div class="profile-grid">
-
-        <p><strong>Age:</strong> <%= health.age %></p>
+        <p><strong>Age:</strong> <%= healthProfile ? healthProfile.age : "N/A" %></p>
 
         <p><strong>Language:</strong>
-            <%= health.language %>
+            <%= healthProfile ? healthProfile.language : "N/A" %>
         </p>
 
         <p><strong>Education:</strong>
-            <%= health.educationLevel %>
+            <%= healthProfile ? healthProfile.educationLevel : "N/A" %>
         </p>
 
         <p><strong>Exercise:</strong>
-            <%= health.exerciseMinutes %> minutes/day
+            <%= healthProfile ? healthProfile.exerciseMinutes : "N/A" %> minutes/day
         </p>
 
         <p><strong>Stress Level:</strong>
-            <%= health.stressLevel %> / 5
+            <%= healthProfile ? healthProfile.stressLevel : "N/A" %> / 5
         </p>
 
         <p><strong>Family History:</strong>
-            <%= health.familyHistory %>
+            <%= healthProfile ? healthProfile.familyHistory : "N/A" %>
+        </p>
+    </div>
+</div>
+
+<!-- ==========================================
+     EYE TRACKING ANALYSIS
+========================================== -->
+
+<div class="card">
+
+    <h2>Eye Tracking Analysis</h2>
+
+    <p>
+        Experimental eye-movement measurements
+        recorded using GazeMap.
+    </p>
+    <!-- EYE TRACKING CONTROLS -->
+    <div
+        id="eyeTrackingControls"
+        data-assessment-id="<%= assessment._id %>"
+        class="eye-tracking-controls"
+    >
+        <h3>Eye Tracking Controls</h3>
+
+        <p>
+            Keep your face visible to the webcam while the recording is running.
         </p>
 
+        <div class="eye-control-options">
+            <label for="gazeDuration">Recording duration:</label>
+
+            <select id="gazeDuration">
+                <option value="20" selected>20 seconds</option>
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+            </select>
+        </div>
+
+        <div class="eye-control-buttons">
+            <button type="button" id="startGazeBtn">
+                Start Eye Tracking
+            </button>
+
+            <button
+                type="button"
+                id="saveGazeBtn"
+                disabled
+                style="display: none;"
+            >
+                Save Results
+            </button>
+        </div>
+
+        <p
+            id="gazeStatus"
+            class="gaze-status"
+            role="status"
+            aria-live="polite"
+        >
+            Ready to start eye tracking.
+        </p>
+
+        <div class="gaze-progress-container">
+            <div
+                id="gazeProgress"
+                class="gaze-progress"
+                style="width: 0%;"
+            ></div>
+        </div>
     </div>
+
+    <% if (eyeTrackingSessions && eyeTrackingSessions.length > 0) { %>
+
+        <% const latestEyeSession = eyeTrackingSessions[0]; %>
+
+        <h3>Latest Eye Tracking Session</h3>
+
+        <div class="profile-grid">
+
+            <p>
+                <strong>Session:</strong>
+                <%= latestEyeSession.session %>
+            </p>
+
+            <p>
+                <strong>Gaze Samples:</strong>
+                <%= latestEyeSession.sampleCount %>
+            </p>
+
+            <p>
+                <strong>Duration:</strong>
+                <%= latestEyeSession.durationSeconds %> seconds
+            </p>
+
+            <p>
+                <strong>Stimulus:</strong>
+                <%= latestEyeSession.stimulus %>
+            </p>
+
+            <p>
+                <strong>Recorded:</strong>
+                <%= new Date(latestEyeSession.createdAt).toLocaleString("en-IN") %>
+            </p>
+
+        </div>
+
+        <% if (latestEyeSession.heatmapFilename) { %>
+
+            <h3>Gaze Heatmap</h3>
+
+            <p>
+                The heatmap shows the spatial distribution
+                of recorded gaze points.
+            </p>
+
+            <div style="
+                width: 100%;
+                max-width: 900px;
+                margin: 20px auto;
+                text-align: center;
+            ">
+
+                <img
+                    src="/eye-tracking/heatmap/<%= encodeURIComponent(latestEyeSession.heatmapFilename) %>"
+                    alt="Gaze tracking heatmap"
+                    style="
+                        width: 100%;
+                        height: auto;
+                        border-radius: 12px;
+                        border: 1px solid #ddd;
+                    "
+                >
+
+            </div>
+
+        <% } %>
+
+        <h3>Gaze Point Measurements</h3>
+
+        <p>
+            Showing the first 10 recorded points.
+            Coordinates are in heatmap pixel space.
+        </p>
+
+        <div style="overflow-x: auto;">
+
+            <table style="
+                width: 100%;
+                border-collapse: collapse;
+                text-align: left;
+            ">
+
+                <thead>
+                    <tr>
+                        <th>Sample</th>
+                        <th>Time (seconds)</th>
+                        <th>X (pixels)</th>
+                        <th>Y (pixels)</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <% latestEyeSession.points.slice(0, 10).forEach((point, index) => { %>
+
+                        <tr>
+                            <td><%= index + 1 %></td>
+                            <td><%= point.seconds %></td>
+                            <td><%= point.x_px %></td>
+                            <td><%= point.y_px %></td>
+                        </tr>
+
+                    <% }); %>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <h3>Previous Eye Tracking Sessions</h3>
+
+        <% if (eyeTrackingSessions.length > 1) { %>
+
+            <% eyeTrackingSessions.slice(1).forEach(session => { %>
+
+                <div class="profile-grid">
+
+                    <p>
+                        <strong>Session:</strong>
+                        <%= session.session %>
+                    </p>
+
+                    <p>
+                        <strong>Samples:</strong>
+                        <%= session.sampleCount %>
+                    </p>
+
+                    <p>
+                        <strong>Duration:</strong>
+                        <%= session.durationSeconds %> seconds
+                    </p>
+
+                    <p>
+                        <strong>Date:</strong>
+                        <%= new Date(session.createdAt).toLocaleString("en-IN") %>
+                    </p>
+
+                </div>
+
+                <hr>
+
+            <% }); %>
+
+        <% } else { %>
+
+            <p>No previous eye-tracking sessions yet.</p>
+
+        <% } %>
+
+    <% } else { %>
+
+        <p>
+            No eye-tracking sessions have been recorded
+            for this assessment yet.
+        </p>
+
+    <% } %>
+
+    <p class="disclaimer">
+        Eye-tracking measurements are experimental
+        observations. They do not directly measure
+        brain activity and cannot diagnose neurological
+        conditions.
+    </p>
 
 </div>
 
-<div class="card report-card">
+<div class="card">
+    <h2>ML Analysis Report</h2>
 
+    <% if (mlError) { %>
+        <p class="disclaimer">
+            ML analysis is currently unavailable. Please check whether
+            the Python FastAPI service is running.
+        </p>
+
+    <% } else if (analysis && analysis.success) { %>
+
+        <div class="profile-grid">
+            <p><strong>Total Sessions:</strong>
+                <%= analysis.sessionCount %>
+            </p>
+
+            <p><strong>Latest Memory:</strong>
+                <%= analysis.latest.memoryPct %>%
+            </p>
+
+            <p><strong>Latest Reaction:</strong>
+                <%= analysis.latest.reactionMs %> ms
+            </p>
+        </div>
+
+        <h3>Personal Baseline</h3>
+
+        <% if (analysis.baselineAvailable) { %>
+            <p>Baseline sessions: <%= analysis.baseline.sessions %></p>
+            <p>Memory baseline: <%= analysis.baseline.memoryPct %>%</p>
+            <p>Attention baseline: <%= analysis.baseline.attentionRatePct %>%</p>
+            <p>Reaction baseline: <%= analysis.baseline.reactionMs %> ms</p>
+        <% } else { %>
+            <p>Complete at least 3 assessments to establish your baseline.</p>
+        <% } %>
+
+        <% if (analysis.comparison) { %>
+            <h3>Comparison With Baseline</h3>
+
+            <p>Memory change:
+                <%= analysis.comparison.memoryPctPoints %> percentage points
+            </p>
+
+            <p>Attention change:
+                <%= analysis.comparison.attentionPoints %> percentage points
+            </p>
+
+            <p>Reaction time change:
+                <%= analysis.comparison.reactionMs %> ms
+            </p>
+
+            <p>Reaction time change:
+                <%= analysis.comparison.reactionPercent %>%
+            </p>
+        <% } else { %>
+            <p>Complete at least 4 assessments to compare your latest session with your baseline.</p>
+        <% } %>
+
+        <h3>Performance Trends</h3>
+
+        <% if (analysis.trends) { %>
+            <p>Memory trend:
+                <%= analysis.trends.memory.direction %>
+            </p>
+
+            <p>Attention trend:
+                <%= analysis.trends.attention.direction %>
+            </p>
+
+            <p>Reaction trend:
+                <%= analysis.trends.reaction.direction %>
+            </p>
+        <% } else { %>
+            <p>Complete at least 3 assessments to view experimental trends.</p>
+        <% } %>
+
+        <h3>Unusual Measurement Pattern</h3>
+
+        <% if (analysis.anomaly.status === "completed") { %>
+            <p>
+                <strong>Result:</strong>
+                <%= analysis.anomaly.isUnusual
+                    ? "Unusual measurement pattern detected"
+                    : "No unusual measurement pattern detected" %>
+            </p>
+
+            <p><%= analysis.anomaly.message %></p>
+        <% } else { %>
+            <p><%= analysis.anomaly.message %></p>
+        <% } %>
+
+    <% } else { %>
+        <p>ML analysis is not available yet.</p>
+    <% } %>
+
+    <p class="disclaimer">
+        <%= analysis && analysis.disclaimer
+            ? analysis.disclaimer
+            : "Experimental performance analysis only. Not a diagnosis or clinically validated screening result." %>
+    </p>
+</div>
+
+
+<!-- ==========================================
+     ANALYTICS CHARTS
+========================================== -->
+
+<div class="card analytics-card">
+    <h2>Performance Analytics</h2>
+    <p>Track your cognitive task measurements across sessions.</p>
+
+    <% if (chartData && chartData.length > 0) { %>
+
+        <div class="chart-container">
+            <h3>Memory Performance</h3>
+            <div class="chart-wrapper">
+                <canvas id="memoryChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Attention Performance</h3>
+            <div class="chart-wrapper">
+                <canvas id="attentionChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Reaction Time</h3>
+            <div class="chart-wrapper">
+                <canvas id="reactionChart"></canvas>
+            </div>
+        </div>
+
+    <% } else { %>
+        <p>Complete assessments to generate performance charts.</p>
+    <% } %>
+</div>
+
+<% if (chartData && chartData.length > 0) { %>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const chartData = <%- JSON.stringify(chartData).replace(/</g, "\\u003c") %>;
+
+        const labels = chartData.map(item => item.date);
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: "bottom"
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        };
+
+        // Memory Performance Chart
+        new Chart(document.getElementById("memoryChart"), {
+            type: "line",
+            data: {
+                labels,
+                datasets: [{
+                    label: "Memory Recall (%)",
+                    data: chartData.map(item => item.memory),
+                    borderColor: "#6366f1",
+                    backgroundColor: "rgba(99, 102, 241, 0.15)",
+                    fill: true,
+                    tension: 0.35
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            callback: value => value + "%"
+                        }
+                    }
+                }
+            }
+        });
+
+        // Attention Performance Chart
+        new Chart(document.getElementById("attentionChart"), {
+            type: "bar",
+            data: {
+                labels,
+                datasets: [{
+                    label: "Attention Result (%)",
+                    data: chartData.map(item => item.attention),
+                    backgroundColor: "#10b981",
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            callback: value => value + "%"
+                        }
+                    }
+                }
+            }
+        });
+
+        // Reaction Time Chart
+        new Chart(document.getElementById("reactionChart"), {
+            type: "line",
+            data: {
+                labels,
+                datasets: [{
+                    label: "Reaction Time (ms)",
+                    data: chartData.map(item => item.reaction),
+                    borderColor: "#f59e0b",
+                    backgroundColor: "rgba(245, 158, 11, 0.15)",
+                    fill: true,
+                    tension: 0.35
+                }]
+            },
+            options: commonOptions
+        });
+    </script>
+
+<% } %>
+
+<!-- Eye Tracking Client Script (WebGazer + GazeMap integration) -->
+<script src="/js/eye-tracking.js" defer></script>
+
+<div class="card report-card">
     <h2>Assessment Summary</h2>
 
     <p>
-        Your first assessment has been successfully recorded.
-        This information can be used to establish a personal
-        baseline for future comparisons.
+        Your assessment has been successfully recorded.
+        Repeated assessments can help establish a personal
+        baseline and monitor changes over time.
     </p>
 
     <p>
         Complete repeat assessments under similar conditions
-        to monitor changes over time.
+        for more meaningful personal comparisons.
     </p>
 
     <p class="disclaimer">
@@ -101,7 +559,6 @@
         not a validated cognitive screening score, diagnosis
         or clinical risk classification.
     </p>
-
 </div>
 
 <a href="/assessment" class="btn">

@@ -8,6 +8,7 @@ const connectDB = require("./config/database");
 const routes = require("./routes");
 
 const app = express();
+const eyeTrackingRoutes = require("./routes/eyeTracking");
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -19,10 +20,9 @@ app.use(express.urlencoded({
 
 app.use(express.json());
 
-app.use(express.static(
-    path.join(__dirname, "public")
-));
+app.use(express.static(path.join(__dirname, "public")));
 
+app.use("/", eyeTrackingRoutes);
 app.use("/", routes);
 
 app.use((req, res) => {

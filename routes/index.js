@@ -1,9 +1,9 @@
-
 const express = require("express");
 const router = express.Router();
 
 const Assessment = require("../models/Assessment");
 const HealthProfile = require("../models/HealthProfile");
+const EyeTracking = require("../models/EyeTracking");
 
 // ==========================================
 // HOME PAGE
@@ -197,7 +197,7 @@ router.post("/health", async (req, res) => {
             },
             {
                 upsert: true,
-                new: true,
+                returnDocument: "after",
                 runValidators: true,
                 setDefaultsOnInsert: true
             }
@@ -212,17 +212,22 @@ router.post("/health", async (req, res) => {
 });
 
 // ==========================================
-// DASHBOARD
+// DASHBOARD WITH ML INTEGRATION
 // ==========================================
 
 router.get("/dashboard/:id", async (req, res) => {
+    let analysis = null;
+    let mlError = null;
+
     try {
+        // 1. Retrieve current assessment FIRST (everything else depends on it)
         const assessment = await Assessment.findById(req.params.id);
 
         if (!assessment) {
             return res.status(404).send("Assessment not found.");
         }
 
+        // 2. Retrieve health profile
         const healthProfile = await HealthProfile.findOne({
             assessmentId: assessment._id
         });
@@ -231,15 +236,134 @@ router.get("/dashboard/:id", async (req, res) => {
             return res.redirect(`/health?assessmentId=${assessment._id}`);
         }
 
+        // 3. Retrieve saved eye-tracking sessions
+        //    (safe now — assessment exists; degrade gracefully on failure)
+        let eyeTrackingSessions = [];
+        try {
+            eyeTrackingSessions = await EyeTracking.find({
+                assessment: assessment._id
+            })
+                .sort({ createdAt: -1 })
+                .lean();
+        } catch (eyeErr) {
+            console.error("Eye-tracking fetch failed:", eyeErr.message);
+            eyeTrackingSessions = [];
+        }
+
+        // 4. Retrieve previous assessments for this user
+        const history = await Assessment.find({
+            email: assessment.email
+        }).sort({ createdAt: 1 });
+
+        // Prepare data for Chart.js
+        const chartData = history.map((item, index) => ({
+            session: index + 1,
+            date: item.createdAt
+                ? new Date(item.createdAt).toLocaleDateString("en-IN")
+                : `Session ${index + 1}`,
+            memory: Number(
+                ((item.memoryCorrect / item.memoryTotal) * 100).toFixed(2)
+            ),
+            attention: item.attentionCorrect ? 100 : 0,
+            reaction: Number(item.reactionMs)
+        }));
+
+        // 5. Send assessment history to Python ML service
+        try {
+            const mlApiUrl =
+                process.env.ML_API_URL || "http://127.0.0.1:8000";
+
+            const response = await fetch(`${mlApiUrl}/analyze`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    history,
+                    health_profile: healthProfile
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    `ML API returned status ${response.status}`
+                );
+            }
+
+            // 6. Receive ML analysis
+            analysis = await response.json();
+
+            if (!analysis.success) {
+                throw new Error(
+                    analysis.message || "ML analysis failed."
+                );
+            }
+
+            console.log("ML analysis completed successfully.");
+
+        } catch (error) {
+            console.error("ML API Error:", error.message);
+            mlError = error.message;
+        }
+
+        // 7. Render dashboard
         res.render("dashboard", {
-            title: "Brain Health Dashboard - BrainGuard AI",
+            title: "BrainGuard AI - Dashboard",
             assessment,
-            healthProfile
+            healthProfile,
+            analysis,
+            mlError,
+            chartData,
+            eyeTrackingSessions
         });
 
     } catch (error) {
         console.error("Dashboard error:", error);
         res.status(500).send("Unable to load dashboard.");
+    }
+});
+
+// ==========================================
+// ASSESSMENT HISTORY
+// ==========================================
+
+router.get("/history/:id", async (req, res) => {
+    try {
+        // Find the assessment used to identify the user
+        const currentAssessment = await Assessment.findById(
+            req.params.id
+        );
+
+        if (!currentAssessment) {
+            return res.status(404).send("Assessment not found.");
+        }
+
+        // Retrieve all previous assessments
+        const history = await Assessment.find({
+            email: currentAssessment.email
+        })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Prepare assessment history data
+        const historyData = history.map((item, index) => ({
+            ...item,
+            session: history.length - index,
+            memoryPct: Number(
+                ((item.memoryCorrect / item.memoryTotal) * 100).toFixed(2)
+            ),
+            attentionPct: item.attentionCorrect ? 100 : 0
+        }));
+
+        res.render("history", {
+            title: "Assessment History - BrainGuard AI",
+            history: historyData,
+            currentAssessment
+        });
+
+    } catch (error) {
+        console.error("Assessment history error:", error);
+        res.status(500).send("Unable to load assessment history.");
     }
 });
 
