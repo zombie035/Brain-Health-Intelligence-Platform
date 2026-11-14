@@ -13,10 +13,10 @@
     <h2>Before you begin</h2>
     <ol>
         <li>Allow camera access and position your face comfortably in view.</li>
-        <li>Keep your head still and follow each calibration dot with your eyes.</li>
+        <li>Keep your face centered so both eyes remain visible in the preview.</li>
         <li>Keep your eyes naturally open and blink normally.</li>
         <li>Do <strong>not</strong> deliberately change your blinking pattern.</li>
-        <li>After calibration, read the passage and blink naturally. Monitoring starts automatically.</li>
+        <li>Read the passage and blink naturally while monitoring runs.</li>
     </ol>
     <p>The recording lasts about 30 seconds. Keep this browser page open to see progress and results.</p>
 </section>
@@ -48,16 +48,14 @@
 
     <div id="blinkStage" class="eye-gaze-stage eye-blink-stage">
         <canvas id="blinkSignalCanvas" aria-label="Live measured eye openness signal"></canvas>
-        <canvas id="blinkCalibrationCanvas" aria-hidden="true"></canvas>
         <video id="blinkVideo" autoplay muted playsinline aria-hidden="true"></video>
         <div class="eye-camera-preview blink-eye-preview">
             <canvas id="blinkEyePreview" aria-label="Cropped eye view with live facial landmarks"></canvas>
             <span>LIVE EYE LANDMARKS</span>
         </div>
-        <%- include("partials/eye-calibration-progress") %>
         <span class="eye-gaze-live-indicator" aria-hidden="true"></span>
         <p id="blinkStageMessage" class="eye-gaze-stage-message">
-            Start the test to calibrate your gaze, then read the paragraph while your blinking is measured.
+            Start the test to read the paragraph while your blinking is measured.
         </p>
         <article id="blinkReadingParagraph" class="blink-reading-paragraph" hidden>
             <h3>Read this passage naturally</h3>
@@ -77,7 +75,7 @@
         </div>
     </div>
     <p class="eye-gaze-camera">
-        <span id="blinkCameraStatus">Camera is off.</span>
+        <span id="blinkCameraStatus">Camera Off</span>
         <span id="blinkFaceStatus">Waiting for the test to start.</span>
     </p>
 
@@ -92,6 +90,5 @@
     Blink measurements depend on lighting, glasses, and camera framing.
 </p>
 
-<script src="/js/eye-tests/calibration-ui.js?v=1" defer></script>
-<script src="/js/eye-tests/blink-monitoring.js?v=calibration-1" defer></script>
+<script src="/js/eye-tests/blink-monitoring.js?v=eye-visibility-2" defer></script>
 <%- include("partials/footer") %>

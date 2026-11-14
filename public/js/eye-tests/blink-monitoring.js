@@ -11,9 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const progressFill = document.getElementById("blinkProgress");
     const progressText = document.getElementById("blinkProgressText");
     const stage = document.getElementById("blinkStage");
-    const calibrationCanvas = document.getElementById("blinkCalibrationCanvas");
-    const calibrationContext = calibrationCanvas.getContext("2d");
-    const calibrationUI = window.EyeCalibrationUI.create(stage);
     const video = document.getElementById("blinkVideo");
     const signalCanvas = document.getElementById("blinkSignalCanvas");
     const eyePreviewCanvas = document.getElementById("blinkEyePreview");
@@ -25,8 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const testDurationMs = 30_000;
     const frameIntervalMs = 85;
     const captureCanvas = document.createElement("canvas");
-    captureCanvas.width = 640;
-    captureCanvas.height = 480;
     const captureContext = captureCanvas.getContext("2d");
     const samples = [];
     const pendingRequests = new Map();
@@ -37,7 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let testStartedAt = 0;
     let latestLeftEyeLandmarks = null;
     let latestRightEyeLandmarks = null;
-    let latestFaceDetected = false;
     let sampleTimer = null;
     let active = false;
     let finishing = false;
@@ -49,33 +43,27 @@ document.addEventListener("DOMContentLoaded", () => {
         progressTrack.setAttribute("aria-valuenow", String(Math.round(progress)));
     }
 
-    function wait(milliseconds) {
-        return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+    function hasValidEyeLandmarks(landmarks) {
+        return Array.isArray(landmarks)
+            && landmarks.length === 16
+            && landmarks.every(point =>
+                Array.isArray(point)
+                && point.length === 2
+                && Number.isFinite(point[0])
+                && Number.isFinite(point[1])
+                && point[0] >= 0
+                && point[0] <= 1
+                && point[1] >= 0
+                && point[1] <= 1
+            );
     }
 
-    function drawCalibrationTarget(position) {
-        const bounds = stage.getBoundingClientRect();
-        const pixelRatio = window.devicePixelRatio || 1;
-        const width = Math.max(1, Math.round(bounds.width * pixelRatio));
-        const height = Math.max(1, Math.round(bounds.height * pixelRatio));
-        if (calibrationCanvas.width !== width || calibrationCanvas.height !== height) {
-            calibrationCanvas.width = width;
-            calibrationCanvas.height = height;
-        }
-        calibrationContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-        calibrationContext.clearRect(0, 0, bounds.width, bounds.height);
-        if (!position) return;
-
-        const x = position[0] * bounds.width;
-        const y = position[1] * bounds.height;
-        const radius = Math.max(9, Math.min(18, bounds.width / 55));
-        calibrationContext.beginPath();
-        calibrationContext.arc(x, y, radius, 0, Math.PI * 2);
-        calibrationContext.fillStyle = "#fbbf24";
-        calibrationContext.fill();
-        calibrationContext.strokeStyle = "#ffffff";
-        calibrationContext.lineWidth = 2;
-        calibrationContext.stroke();
+    function isEyeVisible(result, flag, landmarks, eyeRatio) {
+        if (typeof result[flag] === "boolean") return result[flag];
+        return hasValidEyeLandmarks(landmarks)
+            && Number.isFinite(eyeRatio)
+            && eyeRatio >= 0
+            && eyeRatio <= 1;
     }
 
     async function requestJson(url, options = {}) {
@@ -177,10 +165,8 @@ document.addEventListener("DOMContentLoaded", () => {
             stream = null;
         }
         video.srcObject = null;
-        drawCalibrationTarget(null);
-        calibrationUI.hide();
         stage.classList.remove("eye-camera-active");
-        cameraStatus.textContent = "Camera is off.";
+        cameraStatus.textContent = "Camera Off";
     }
 
     function releaseFullscreen() {
@@ -211,7 +197,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const context = signalCanvas.getContext("2d");
         context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         context.clearRect(0, 0, rect.width, rect.height);
-        context.strokeStyle = "rgba(148, 163, 184, 0.18)";
+        context.fillStyle = "#0b1220";
+        context.fillRect(0, 0, rect.width, rect.height);
+        context.strokeStyle = "rgba(148, 163, 184, 0.32)";
         context.lineWidth = 1;
         for (let row = 1; row < 4; row += 1) {
             const y = (rect.height * row) / 4;
@@ -225,11 +213,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const drawEye = (key, color) => {
             context.beginPath();
             context.strokeStyle = color;
-            context.lineWidth = 2;
+            context.lineWidth = 2.5;
             let started = false;
             plotSamples.forEach((sample, index) => {
-                const value = sample.valid ? sample[key] : null;
-                if (typeof value !== "number") {
+                const eyeVisible = key === "leftEAR"
+                    ? sample.leftEyeVisible
+                    : sample.rightEyeVisible;
+                const value = eyeVisible && Number.isFinite(sample[key])
+                    ? sample[key]
+                    : null;
+                if (value === null) {
                     started = false;
                     return;
                 }
@@ -249,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
         drawEye("rightEAR", "#34d399");
     }
 
-    function drawEyePreview(leftLandmarks, rightLandmarks, faceDetected) {
+    function drawEyePreview(leftLandmarks, rightLandmarks) {
         const rect = eyePreviewCanvas.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
         const pixelRatio = window.devicePixelRatio || 1;
@@ -265,33 +258,20 @@ document.addEventListener("DOMContentLoaded", () => {
         context.fillStyle = "#0b1220";
         context.fillRect(0, 0, rect.width, rect.height);
 
-        const validLandmarks = landmarks =>
-            Array.isArray(landmarks)
-            && landmarks.length === 16
-            && landmarks.every(point =>
-                Array.isArray(point)
-                && point.length === 2
-                && Number.isFinite(point[0])
-                && Number.isFinite(point[1])
-                && point[0] >= 0
-                && point[0] <= 1
-                && point[1] >= 0
-                && point[1] <= 1
-            );
-        if (!validLandmarks(leftLandmarks) || !validLandmarks(rightLandmarks)) {
+        const visibleEyes = [
+            { landmarks: leftLandmarks, color: "#38bdf8" },
+            { landmarks: rightLandmarks, color: "#a3e635" },
+        ].filter(eye => hasValidEyeLandmarks(eye.landmarks));
+        if (visibleEyes.length === 0) {
             context.fillStyle = "#cbd5e1";
             context.font = "13px sans-serif";
             context.textAlign = "center";
             context.textBaseline = "middle";
-            context.fillText(
-                faceDetected ? "Waiting for clear eye landmarks" : "Face not in frame",
-                rect.width / 2,
-                rect.height / 2
-            );
+            context.fillText("Eyes not visible. Look directly into camera.", rect.width / 2, rect.height / 2);
             return;
         }
 
-        const allLandmarks = [...leftLandmarks, ...rightLandmarks];
+        const allLandmarks = visibleEyes.flatMap(eye => eye.landmarks);
         const sourceWidth = captureCanvas.width;
         const sourceHeight = captureCanvas.height;
         const xs = allLandmarks.map(point => point[0] * sourceWidth);
@@ -353,28 +333,44 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             context.restore();
         };
-        drawEye(leftLandmarks, "#38bdf8");
-        drawEye(rightLandmarks, "#a3e635");
+        visibleEyes.forEach(eye => drawEye(eye.landmarks, eye.color));
     }
 
     function updateLiveReadout(sample) {
-        if (!sample.faceDetected) {
-            faceStatus.textContent = "No face detected. Adjust your position and lighting.";
+        const leftVisible = sample.leftEyeVisible === true;
+        const rightVisible = sample.rightEyeVisible === true;
+        if (!leftVisible && !rightVisible) {
+            faceStatus.textContent =
+                "Eyes not visible. Please look directly into the camera. Adjust your face or camera position.";
             earReadout.textContent = "--";
             return;
         }
-        if (!sample.valid) {
-            faceStatus.textContent = "Face found; eye landmarks are not currently clear.";
+        if (leftVisible !== rightVisible) {
+            faceStatus.textContent =
+                "Only one eye is detected. Center your face and adjust the camera so both eyes are visible.";
             earReadout.textContent = "--";
             return;
         }
-        faceStatus.textContent = "Face and eye landmarks detected. Blink normally.";
+        if (!sample.valid || !Number.isFinite(sample.avgEAR)) {
+            faceStatus.textContent =
+                "Eyes are not reliably tracked. Look directly into the camera and adjust your position.";
+            earReadout.textContent = "--";
+            return;
+        }
+        faceStatus.textContent = "Both eyes visible and tracked. Blink normally.";
         earReadout.textContent = sample.avgEAR.toFixed(3);
     }
 
     function encodeCaptureFrame() {
         if (!video.videoWidth || !video.videoHeight) {
             return Promise.reject(new Error("The browser camera has not produced a video frame yet."));
+        }
+        const scale = Math.min(1, 640 / video.videoWidth);
+        const captureWidth = Math.max(1, Math.round(video.videoWidth * scale));
+        const captureHeight = Math.max(1, Math.round(video.videoHeight * scale));
+        if (captureCanvas.width !== captureWidth || captureCanvas.height !== captureHeight) {
+            captureCanvas.width = captureWidth;
+            captureCanvas.height = captureHeight;
         }
         captureContext.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
         return new Promise((resolve, reject) => {
@@ -389,72 +385,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 reader.readAsDataURL(blob);
             }, "image/jpeg", 0.68);
         });
-    }
-
-    async function calibrateGazeMap() {
-        const calibrationPoints = [];
-        calibrationUI.begin();
-        for (let index = 0; index < calibrationUI.targets.length; index += 1) {
-            if (!active) throw new Error("The assessment was interrupted.");
-            const position = calibrationUI.targets[index];
-            calibrationUI.showTarget(index + 1, position);
-            drawCalibrationTarget(position);
-            statusText.textContent =
-                `Calibration ${index + 1} of ${calibrationUI.targets.length}. Follow the highlighted dot.`;
-            await wait(600);
-
-            const features = [];
-            for (let frameIndex = 0; frameIndex < 5; frameIndex += 1) {
-                if (!active) throw new Error("The assessment was interrupted.");
-                const frameStartedAt = performance.now();
-                const imageBase64 = await encodeCaptureFrame();
-                const result = await sendSocketRequest("frame", {
-                    imageBase64,
-                    timestampMs: Math.round(frameStartedAt),
-                    returnRaw: true,
-                    includeEar: true,
-                });
-                const calibrationSample = {
-                    faceDetected: result.faceDetected === true,
-                    valid: result.valid === true
-                        && (Number.isFinite(result.leftEAR) || Number.isFinite(result.rightEAR)),
-                    leftEAR: Number.isFinite(result.leftEAR) ? result.leftEAR : null,
-                    rightEAR: Number.isFinite(result.rightEAR) ? result.rightEAR : null,
-                    avgEAR: Number.isFinite(result.avgEAR) ? result.avgEAR : null,
-                };
-                latestLeftEyeLandmarks = result.leftEyeLandmarks || null;
-                latestRightEyeLandmarks = result.rightEyeLandmarks || null;
-                latestFaceDetected = calibrationSample.faceDetected;
-                updateLiveReadout(calibrationSample);
-                drawEyePreview(
-                    result.leftEyeLandmarks,
-                    result.rightEyeLandmarks,
-                    calibrationSample.faceDetected
-                );
-                if (result.valid && Array.isArray(result.features)) {
-                    features.push(result.features);
-                }
-                await wait(Math.max(0, frameIntervalMs - (performance.now() - frameStartedAt)));
-            }
-
-            calibrationPoints.push({
-                targetX: position[0],
-                targetY: position[1],
-                features,
-            });
-            calibrationUI.completeTarget(index + 1);
-        }
-
-        if (!active) throw new Error("The assessment was interrupted.");
-        calibrationUI.fitting();
-        drawCalibrationTarget(null);
-        const calibration = await sendSocketRequest("calibrate", {
-            points: calibrationPoints,
-        });
-        if (!calibration.success) {
-            throw new Error(calibration.message || "Gaze calibration failed.");
-        }
-        calibrationUI.complete();
     }
 
     async function captureNextFrame() {
@@ -474,26 +404,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 includeEar: true,
             });
             const eyeValue = value => Number.isFinite(value) ? value : null;
+            const leftEyeVisible = isEyeVisible(
+                result,
+                "leftEyeVisible",
+                result.leftEyeLandmarks,
+                result.leftEAR
+            );
+            const rightEyeVisible = isEyeVisible(
+                result,
+                "rightEyeVisible",
+                result.rightEyeLandmarks,
+                result.rightEAR
+            );
             const sample = {
                 timeSeconds: elapsedSeconds,
                 leftEAR: eyeValue(result.leftEAR),
                 rightEAR: eyeValue(result.rightEAR),
                 avgEAR: eyeValue(result.avgEAR),
                 faceDetected: result.faceDetected === true,
+                leftEyeVisible,
+                rightEyeVisible,
                 valid: result.valid === true
                     && result.faceDetected === true
-                    && (Number.isFinite(result.leftEAR) || Number.isFinite(result.rightEAR)),
+                    && leftEyeVisible
+                    && rightEyeVisible
+                    && Number.isFinite(result.leftEAR)
+                    && Number.isFinite(result.rightEAR)
+                    && Number.isFinite(result.avgEAR),
             };
             samples.push(sample);
             latestLeftEyeLandmarks = result.leftEyeLandmarks || null;
             latestRightEyeLandmarks = result.rightEyeLandmarks || null;
-            latestFaceDetected = sample.faceDetected;
             updateLiveReadout(sample);
-            drawEyePreview(
-                result.leftEyeLandmarks,
-                result.rightEyeLandmarks,
-                sample.faceDetected
-            );
+            drawEyePreview(result.leftEyeLandmarks, result.rightEyeLandmarks);
             drawSignal();
 
             const progress = ((performance.now() - testStartedAt) / testDurationMs) * 100;
@@ -550,23 +493,26 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         statusText.textContent = `Unable to complete the test: ${error.message}`;
-        cameraStatus.textContent = "Camera is off.";
+        cameraStatus.textContent = "Camera Off";
         cancelButton.hidden = true;
         startButton.disabled = false;
         runner.classList.remove("eye-test-active");
+        stage.classList.remove("eye-test-active", "eye-camera-active");
         sessionId = null;
     }
 
     startButton.addEventListener("click", async () => {
+        active = true;
         startButton.disabled = true;
         setProgress(0);
-        statusText.textContent = "Requesting browser camera access...";
+        statusText.textContent = "Requesting camera access...";
+        cameraStatus.textContent = "Camera Off";
+        faceStatus.textContent = "Waiting for camera.";
         samples.length = 0;
         readingParagraph.hidden = true;
         latestLeftEyeLandmarks = null;
         latestRightEyeLandmarks = null;
-        latestFaceDetected = false;
-        drawEyePreview(null, null, false);
+        drawEyePreview(null, null);
         drawSignal();
 
         try {
@@ -588,11 +534,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     height: { ideal: 480 },
                 },
             });
+            stream.getVideoTracks().forEach(track => {
+                track.addEventListener("ended", () => {
+                    cameraStatus.textContent = "Camera Off";
+                    if (!active) return;
+                    void failAssessment(new Error("Camera disconnected. Restart the test and grant camera access."));
+                }, { once: true });
+            });
             video.srcObject = stream;
             await video.play();
+            if (!active) return;
             stage.classList.add("eye-test-active", "eye-camera-active");
             runner.classList.add("eye-test-active");
-            cameraStatus.textContent = "Browser camera is live.";
+            cameraStatus.textContent = "Camera Active";
             faceStatus.textContent = "Connecting to GazeMap...";
 
             const session = await requestJson(
@@ -603,19 +557,8 @@ document.addEventListener("DOMContentLoaded", () => {
             cancelButton.hidden = false;
             cancelButton.disabled = false;
 
-            active = true;
             await connectSocket();
-            await sendSocketRequest("init", {
-                widthPx: Math.max(100, Math.round(stage.clientWidth)),
-                heightPx: Math.max(100, Math.round(stage.clientHeight)),
-                widthMm: 345,
-            });
-            statusText.textContent = "Calibrating. Follow each on-screen dot with your eyes.";
-            await calibrateGazeMap();
             if (!active) return;
-            await wait(350);
-            calibrationUI.hide();
-            drawCalibrationTarget(null);
             testStartedAt = performance.now();
             readingParagraph.hidden = false;
             statusText.textContent = "Read the passage naturally and blink as you normally would.";
@@ -633,6 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cleanup();
         statusText.textContent = "Blink monitoring cancelled.";
         runner.classList.remove("eye-test-active");
+        stage.classList.remove("eye-test-active", "eye-camera-active");
         cancelButton.hidden = true;
         startButton.disabled = false;
         sessionId = null;
@@ -646,13 +590,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    drawEyePreview(null, null, false);
+    drawEyePreview(null, null);
     window.addEventListener("resize", () => {
         drawSignal();
-        drawEyePreview(
-            latestLeftEyeLandmarks,
-            latestRightEyeLandmarks,
-            latestFaceDetected
-        );
+        drawEyePreview(latestLeftEyeLandmarks, latestRightEyeLandmarks);
     });
 });

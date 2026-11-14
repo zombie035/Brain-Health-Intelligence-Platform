@@ -320,20 +320,21 @@
     pointer-events: none;
 }
 
-#blinkCalibrationCanvas {
-    z-index: 2;
-    pointer-events: none;
-}
-
 #blinkSignalCanvas {
     inset: auto;
+    top: 64px;
     right: 16px;
-    bottom: 16px;
+    bottom: auto;
     left: auto;
-    width: min(390px, 42%);
-    height: 72px;
+    width: min(340px, calc(100% - 32px));
+    height: 88px;
     border-radius: 8px;
-    opacity: 0.9;
+    opacity: 1;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.2);
+}
+
+#blinkMonitoringTest .eye-calibration-panel {
+    display: none !important;
 }
 
 .blink-eye-preview {
@@ -534,6 +535,47 @@
 }
 
 #memoryTrackingTest:fullscreen .eye-progress-track {
+    flex: 0 0 12px;
+    margin-top: 4px;
+}
+
+#attentionTest:fullscreen {
+    box-sizing: border-box;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    overflow: auto;
+    flex-direction: column;
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+}
+
+#attentionTest:fullscreen .eye-gaze-stage {
+    flex: 1 1 auto;
+    min-height: 180px;
+    margin-top: 12px;
+}
+
+#attentionTest:fullscreen .eye-runner-heading h2 {
+    margin-top: 0;
+}
+
+#attentionTest:fullscreen .eye-runner-actions {
+    flex: 0 0 auto;
+    margin: 12px 0 4px;
+}
+
+#attentionTest:fullscreen .eye-status,
+#attentionTest:fullscreen .eye-progress-text {
+    flex: 0 0 auto;
+    margin-top: 5px;
+    margin-bottom: 4px;
+}
+
+#attentionTest:fullscreen .eye-progress-track {
     flex: 0 0 12px;
     margin-top: 4px;
 }
@@ -755,8 +797,10 @@
     }
 
     #blinkSignalCanvas {
-        width: min(180px, 44%);
-        height: 56px;
+        top: 58px;
+        right: 12px;
+        width: min(240px, calc(100% - 24px));
+        height: 64px;
     }
 
     #memoryStage {

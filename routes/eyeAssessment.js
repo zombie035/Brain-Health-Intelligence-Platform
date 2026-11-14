@@ -719,7 +719,7 @@ async function completeBrowserBlinkAssessment(req, res) {
         const { samples, widthPx, heightPx } = req.body || {};
         const finite = value => typeof value === "number" && Number.isFinite(value);
         const validEar = value =>
-            value === null || (finite(value) && value >= 0 && value <= 2);
+            value === null || (finite(value) && value >= 0 && value <= 1);
         const validScreenSize = value =>
             Number.isInteger(value) && value >= 100 && value <= 10000;
         if (
@@ -748,7 +748,8 @@ async function completeBrowserBlinkAssessment(req, res) {
             && typeof sample.valid === "boolean"
             && (!sample.valid || (
                 sample.faceDetected
-                && (sample.leftEAR !== null || sample.rightEAR !== null)
+                && sample.leftEAR !== null
+                && sample.rightEAR !== null
                 && sample.avgEAR !== null
             ))
         );

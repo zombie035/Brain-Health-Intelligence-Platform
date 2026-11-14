@@ -251,6 +251,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         video.srcObject = null;
         stage.classList.remove("eye-camera-active");
+        if (document.fullscreenElement === runner && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+        }
     }
 
     function wait(milliseconds) {
@@ -444,8 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         startButton.disabled = true;
-        cancelButton.hidden = false;
-        active = true;
+        cancelButton.hidden = true;
         interruptionMessage = null;
         testPoints = [];
         displayTrail = [];
@@ -454,12 +456,27 @@ document.addEventListener("DOMContentLoaded", () => {
         lastRenderTime = 0;
         lastTrailTime = 0;
         currentTarget = null;
-        startStageAnimation();
         setProgress(0);
-        statusText.textContent = "Requesting camera permission...";
-        stageMessage.textContent = "Starting the browser camera...";
+        statusText.textContent = "Entering fullscreen...";
+        stageMessage.textContent = "Opening the assessment in fullscreen...";
 
         try {
+            if (typeof runner.requestFullscreen !== "function") {
+                throw new Error("Fullscreen mode is not supported by this browser.");
+            }
+            await runner.requestFullscreen();
+            await new Promise(resolve => {
+                window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+            });
+            if (document.fullscreenElement !== runner) {
+                throw new Error("Could not enter fullscreen mode.");
+            }
+            active = true;
+            cancelButton.hidden = false;
+            resizeCanvas();
+            startStageAnimation();
+            statusText.textContent = "Requesting camera permission...";
+            stageMessage.textContent = "Starting the browser camera...";
             stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     width: { ideal: 640 },
@@ -538,6 +555,18 @@ document.addEventListener("DOMContentLoaded", () => {
         startButton.disabled = false;
         cancelButton.hidden = true;
         setProgress(0);
+        stageMessage.textContent = interruptionMessage;
+        statusText.textContent = interruptionMessage;
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+        if (!active || document.fullscreenElement === runner) return;
+        active = false;
+        interruptionMessage = "Fullscreen was exited. Restart the test to continue.";
+        stopCamera();
+        startButton.disabled = false;
+        cancelButton.hidden = true;
+        stage.classList.remove("eye-test-active");
         stageMessage.textContent = interruptionMessage;
         statusText.textContent = interruptionMessage;
     });
