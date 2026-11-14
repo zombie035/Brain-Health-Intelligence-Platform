@@ -69,7 +69,7 @@
      EYE TRACKING ANALYSIS
 ========================================== -->
 
-<div class="card">
+<div class="card" id="eyeTrackingAnalysis">
 
     <h2>Eye Tracking Analysis</h2>
 
@@ -82,60 +82,14 @@
             Open Eye Assessment
         </a>
     </p>
-    <!-- EYE TRACKING CONTROLS -->
-    <div
-        id="eyeTrackingControls"
-        data-assessment-id="<%= assessment._id %>"
-        class="eye-tracking-controls"
-    >
-        <h3>Eye Tracking Controls</h3>
 
-        <p>
-            Keep your face visible to the webcam while the recording is running.
-        </p>
-
-        <div class="eye-control-options">
-            <label for="gazeDuration">Recording duration:</label>
-
-            <select id="gazeDuration">
-                <option value="20" selected>20 seconds</option>
-                <option value="30">30 seconds</option>
-                <option value="60">60 seconds</option>
-            </select>
-        </div>
-
-        <div class="eye-control-buttons">
-            <button type="button" id="startGazeBtn">
-                Start Eye Tracking
-            </button>
-
-            <button
-                type="button"
-                id="saveGazeBtn"
-                disabled
-                style="display: none;"
-            >
-                Save Results
-            </button>
-        </div>
-
-        <p
-            id="gazeStatus"
-            class="gaze-status"
-            role="status"
-            aria-live="polite"
-        >
-            Ready to start eye tracking.
-        </p>
-
-        <div class="gaze-progress-container">
-            <div
-                id="gazeProgress"
-                class="gaze-progress"
-                style="width: 0%;"
-            ></div>
-        </div>
-    </div>
+    <p>
+        Calibration, live gaze tracking, and the final scanpath heatmap run
+        directly in your browser.
+        <a class="btn" href="/eye-assessment/<%= assessment._id %>/attention">
+            Start Browser Eye Tracking
+        </a>
+    </p>
 
     <% if (eyeTrackingSessions && eyeTrackingSessions.length > 0) { %>
 
@@ -158,6 +112,11 @@
             <p>
                 <strong>Duration:</strong>
                 <%= latestEyeSession.durationSeconds %> seconds
+            </p>
+
+            <p>
+                <strong>Calibration:</strong>
+                <%= latestEyeSession.calibrationStatus || "not recorded" %>
             </p>
 
             <p>
@@ -447,8 +406,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script id="chart-data" type="application/json"><%- JSON.stringify(chartData).replace(/</g, "\\u003c") %></script>
+
     <script>
-        const chartData = <%- JSON.stringify(chartData).replace(/</g, "\\u003c") %>;
+        const chartData = JSON.parse(document.getElementById("chart-data").textContent);
 
         const labels = chartData.map(item => item.date);
 
@@ -541,9 +502,6 @@
     </script>
 
 <% } %>
-
-<!-- Eye Tracking Client Script (WebGazer + GazeMap integration) -->
-<script src="/js/eye-tracking.js" defer></script>
 
 <div class="card report-card">
     <h2>Assessment Summary</h2>

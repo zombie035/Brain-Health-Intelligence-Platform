@@ -1,0 +1,237 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 04 RESULTS</span>
+    <h1>Blink and Fatigue Monitoring</h1>
+    <p>
+        <%= new Date(result.startedAt).toLocaleString("en-IN") %>
+        <span class="eye-status-pill eye-status-<%= result.status %>">
+            <%= result.status %>
+        </span>
+    </p>
+</section>
+
+<section class="card">
+    <p><%= result.message %></p>
+    <div class="eye-metric-grid">
+        <article class="eye-metric">
+            <span>Total blinks</span>
+            <strong><%= result.measurements.totalBlinks == null ? "Unavailable" : result.measurements.totalBlinks %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Blinks per minute</span>
+            <strong><%= result.measurements.blinksPerMinute == null ? "Unavailable" : result.measurements.blinksPerMinute %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Average blink duration</span>
+            <strong><%= result.measurements.avgBlinkDurationMs == null ? "Unavailable" : `${result.measurements.avgBlinkDurationMs} ms` %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Median blink duration</span>
+            <strong><%= result.measurements.medianBlinkDurationMs == null ? "Unavailable" : `${result.measurements.medianBlinkDurationMs} ms` %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Longest eye closure</span>
+            <strong><%= result.measurements.longestClosureMs == null ? "Unavailable" : `${result.measurements.longestClosureMs} ms` %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Prolonged closures</span>
+            <strong><%= result.measurements.prolongedClosureCount == null ? "Unavailable" : result.measurements.prolongedClosureCount %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Valid tracking</span>
+            <strong><%= result.measurements.validTrackingPct == null ? "Unavailable" : `${result.measurements.validTrackingPct}%` %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Duration</span>
+            <strong><%= result.durationSeconds == null ? "Unavailable" : `${result.durationSeconds} s` %></strong>
+        </article>
+    </div>
+
+    <% if (result.observations && result.observations.length) { %>
+        <h3>Experimental Observations</h3>
+        <ul class="eye-quality-notes">
+            <% result.observations.forEach(note => { %>
+                <li><%= note %></li>
+            <% }); %>
+        </ul>
+    <% } %>
+
+    <% if (result.sampleQuality && result.sampleQuality.qualityNotes && result.sampleQuality.qualityNotes.length) { %>
+        <h3>Data Quality Notes</h3>
+        <ul class="eye-quality-notes">
+            <% result.sampleQuality.qualityNotes.forEach(note => { %>
+                <li><%= note %></li>
+            <% }); %>
+        </ul>
+    <% } %>
+</section>
+
+<section class="card">
+    <h2>Charts</h2>
+    <div class="eye-chart-grid">
+        <div class="eye-chart-wrap">
+            <h3>Eye openness over time (EAR)</h3>
+            <canvas id="opennessChart"></canvas>
+        </div>
+        <div class="eye-chart-wrap">
+            <h3>Blink duration distribution</h3>
+            <canvas id="durationChart"></canvas>
+        </div>
+        <div class="eye-chart-wrap">
+            <h3>Closure events timeline</h3>
+            <canvas id="closureChart"></canvas>
+        </div>
+        <div class="eye-chart-wrap">
+            <h3>Blinks per 5-second interval</h3>
+            <canvas id="intervalChart"></canvas>
+        </div>
+    </div>
+</section>
+
+<a class="btn" href="/eye-assessment/<%= assessment._id %>">Return to Eye Assessment</a>
+<a class="eye-back-link" href="/dashboard/<%= assessment._id %>">Dashboard</a>
+
+<p class="disclaimer">
+    Experimental observations only. Not a diagnosis or a clinically validated screening result.
+    Blink measurements are sensitive to camera framing, lighting, and glasses.
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div
+    id="eyeResultData"
+    data-samples="<%= JSON.stringify(result.samples || []) %>"
+    data-blink-events="<%= JSON.stringify(result.blinkEvents || []) %>"
+    data-closure-events="<%= JSON.stringify(result.closureEvents || []) %>"
+></div>
+<script>
+    const resultData = document.getElementById("eyeResultData").dataset;
+    const samples = JSON.parse(resultData.samples);
+    const blinkEvents = JSON.parse(resultData.blinkEvents);
+    const closureEvents = JSON.parse(resultData.closureEvents);
+
+    // Chart 1 — openness over time
+    const openSamples = samples.filter(s => s.valid && (s.leftEAR != null || s.rightEAR != null));
+    new Chart(document.getElementById("opennessChart"), {
+        type: "line",
+        data: {
+            datasets: [
+                {
+                    label: "Left eye EAR",
+                    data: openSamples.map(s => ({ x: s.timeSeconds, y: s.leftEAR })),
+                    borderColor: "#3b82f6",
+                    backgroundColor: "rgba(59,130,246,0.15)",
+                    showLine: true,
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    tension: 0.2,
+                },
+                {
+                    label: "Right eye EAR",
+                    data: openSamples.map(s => ({ x: s.timeSeconds, y: s.rightEAR })),
+                    borderColor: "#f59e0b",
+                    backgroundColor: "rgba(245,158,11,0.15)",
+                    showLine: true,
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    tension: 0.2,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { type: "linear", title: { display: true, text: "Time (s)" } },
+                y: { title: { display: true, text: "EAR" } },
+            },
+        },
+    });
+
+    // Chart 2 — blink duration distribution
+    const durations = blinkEvents.map(e => e.durationMs);
+    new Chart(document.getElementById("durationChart"), {
+        type: "bar",
+        data: {
+            labels: blinkEvents.map((_, i) => `Blink ${i + 1}`),
+            datasets: [{
+                label: "Duration (ms)",
+                data: durations,
+                backgroundColor: "#10b981",
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: "Blink event" } },
+                y: { beginAtZero: true, title: { display: true, text: "Duration (ms)" } },
+            },
+        },
+    });
+
+    // Chart 3 — closure timeline
+    new Chart(document.getElementById("closureChart"), {
+        type: "scatter",
+        data: {
+            datasets: closureEvents.map(e => ({
+                label: e.category,
+                data: [{ x: e.startTimeSeconds, y: 1 }],
+                backgroundColor:
+                    e.category === "prolonged_closure" ? "#dc2626" :
+                    e.category === "longer_closure" ? "#f59e0b" :
+                    e.category === "uncertain_incomplete" ? "#6b7280" :
+                    "#3b82f6",
+                pointRadius: 8,
+            })),
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { type: "linear", title: { display: true, text: "Time (s)" } },
+                y: { display: false, min: 0, max: 2 },
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label} at ${ctx.parsed.x.toFixed(2)}s`,
+                    },
+                },
+            },
+        },
+    });
+
+    // Chart 4 — blinks per 5-second interval
+    const intervalSec = 5;
+    const totalDuration = samples.length > 0 ? samples[samples.length - 1].timeSeconds : 30;
+    const numIntervals = Math.ceil(totalDuration / intervalSec);
+    const intervalCounts = new Array(numIntervals).fill(0);
+    blinkEvents.forEach(e => {
+        const idx = Math.floor(e.startTimeSeconds / intervalSec);
+        if (idx >= 0 && idx < numIntervals) intervalCounts[idx] += 1;
+    });
+
+    new Chart(document.getElementById("intervalChart"), {
+        type: "bar",
+        data: {
+            labels: intervalCounts.map((_, i) => `${i * intervalSec}-${(i + 1) * intervalSec}s`),
+            datasets: [{
+                label: "Blinks detected",
+                data: intervalCounts,
+                backgroundColor: "#6366f1",
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: "Time interval" } },
+                y: { beginAtZero: true, title: { display: true, text: "Blinks" } },
+            },
+        },
+    });
+</script>
+<%- include("partials/footer") %>

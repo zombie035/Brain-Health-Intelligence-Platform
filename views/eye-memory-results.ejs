@@ -1,0 +1,60 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 05 RESULTS</span>
+    <h1>Memory-Based Eye Tracking</h1>
+    <p>
+        <%= new Date(result.startedAt).toLocaleString("en-IN") %>
+        <span class="eye-status-pill eye-status-<%= result.status %>"><%= result.status %></span>
+    </p>
+</section>
+
+<section class="card">
+    <p><%= result.message %></p>
+    <h2>Memory Performance</h2>
+    <div class="eye-metric-grid">
+        <article class="eye-metric"><span>Accuracy</span><strong><%= result.measurements.recognitionAccuracy == null ? "Unavailable" : `${result.measurements.recognitionAccuracy}%` %></strong></article>
+        <article class="eye-metric"><span>Hits (Seen Correctly)</span><strong><%= result.measurements.hits ?? "Unavailable" %></strong></article>
+        <article class="eye-metric"><span>Misses</span><strong><%= result.measurements.misses ?? "Unavailable" %></strong></article>
+        <article class="eye-metric"><span>Correct Rejections</span><strong><%= result.measurements.correctRejections ?? "Unavailable" %></strong></article>
+        <article class="eye-metric"><span>False Alarms</span><strong><%= result.measurements.falseAlarms ?? "Unavailable" %></strong></article>
+        <article class="eye-metric"><span>Sensitivity (d')</span><strong><%= result.measurements.dPrime ?? "Unavailable" %></strong></article>
+        <article class="eye-metric"><span>Mean Response Time</span><strong><%= result.measurements.meanResponseTimeMs == null ? "Unavailable" : `${result.measurements.meanResponseTimeMs} ms` %></strong></article>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Eye Tracking Analysis</h2>
+    <div class="eye-metric-grid">
+        <article class="eye-metric"><span>Mean Encoding Fixation</span><strong><%= result.measurements.meanEncodingFixationMs == null ? "Unavailable" : `${result.measurements.meanEncodingFixationMs} ms` %></strong></article>
+        <article class="eye-metric"><span>Mean Recognition Fixation</span><strong><%= result.measurements.meanRecognitionFixationMs == null ? "Unavailable" : `${result.measurements.meanRecognitionFixationMs} ms` %></strong></article>
+        <article class="eye-metric"><span>Tracking Quality</span><strong><%= result.sampleQuality.validTrackingPct == null ? "Unavailable" : `${result.sampleQuality.validTrackingPct}%` %></strong></article>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Recognition Trial Breakdown</h2>
+    <div class="eye-table-scroll">
+        <table class="eye-target-table">
+            <thead>
+                <tr><th>Image</th><th>Actual</th><th>Response</th><th>Correct</th><th>Response Time</th><th>Fixations</th></tr>
+            </thead>
+            <tbody>
+                <% result.trials.filter(t => t.phase === "recognition").forEach(t => { %>
+                    <tr>
+                        <td><%= t.imageId %></td>
+                        <td><%= t.isOld ? "Old" : "New" %></td>
+                        <td><%= t.userResponse === "seen" ? "Seen" : "Not Seen" %></td>
+                        <td style="color: <%= t.isCorrect ? 'green' : 'red' %>"><%= t.isCorrect ? "Yes" : "No" %></td>
+                        <td><%= t.responseTimeMs ?? "N/A" %> ms</td>
+                        <td><%= t.fixationCount %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<a class="btn" href="/eye-assessment/<%= assessment._id %>">Return to Eye Assessment</a>
+<p class="disclaimer">Experimental observations only. Not a diagnosis or clinically validated screening result.</p>
+<%- include("partials/footer") %>

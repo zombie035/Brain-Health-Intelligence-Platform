@@ -1,0 +1,97 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 04</span>
+    <h1>Blink and Fatigue Monitoring</h1>
+    <p>
+        The webcam records your eye-openness over time to measure blink frequency
+        and closure duration. This is an experimental measurement, not a medical test.
+    </p>
+</section>
+
+<section class="card eye-instructions">
+    <h2>Before you begin</h2>
+    <ol>
+        <li>Allow camera access and position your face comfortably in view.</li>
+        <li>Keep your head still and follow each calibration dot with your eyes.</li>
+        <li>Keep your eyes naturally open and blink normally.</li>
+        <li>Do <strong>not</strong> deliberately change your blinking pattern.</li>
+        <li>After calibration, read the passage and blink naturally. Monitoring starts automatically.</li>
+    </ol>
+    <p>The recording lasts about 30 seconds. Keep this browser page open to see progress and results.</p>
+</section>
+
+<section
+    id="blinkMonitoringTest"
+    class="card eye-test-runner"
+    data-assessment-id="<%= assessment._id %>"
+    data-gaze-ws-url="<%= gazeWsUrl %>"
+>
+    <div class="eye-runner-heading">
+        <div>
+            <h2>Ready when you are</h2>
+            <p>Assessment for <strong><%= assessment.name %></strong></p>
+        </div>
+        <a href="/eye-assessment/<%= assessment._id %>">Back to assessments</a>
+    </div>
+
+    <div class="eye-runner-actions">
+        <button class="btn" type="button" id="startBlinkTest">Start Test</button>
+        <button class="eye-cancel-button" type="button" id="cancelBlinkTest" hidden>
+            Cancel Test
+        </button>
+    </div>
+
+    <p id="blinkStatus" class="eye-status" role="status" aria-live="polite">
+        Ready. The webcam starts only after you click Start Test.
+    </p>
+
+    <div id="blinkStage" class="eye-gaze-stage eye-blink-stage">
+        <canvas id="blinkSignalCanvas" aria-label="Live measured eye openness signal"></canvas>
+        <canvas id="blinkCalibrationCanvas" aria-hidden="true"></canvas>
+        <video id="blinkVideo" autoplay muted playsinline aria-hidden="true"></video>
+        <div class="eye-camera-preview blink-eye-preview">
+            <canvas id="blinkEyePreview" aria-label="Cropped eye view with live facial landmarks"></canvas>
+            <span>LIVE EYE LANDMARKS</span>
+        </div>
+        <%- include("partials/eye-calibration-progress") %>
+        <span class="eye-gaze-live-indicator" aria-hidden="true"></span>
+        <p id="blinkStageMessage" class="eye-gaze-stage-message">
+            Start the test to calibrate your gaze, then read the paragraph while your blinking is measured.
+        </p>
+        <article id="blinkReadingParagraph" class="blink-reading-paragraph" hidden>
+            <h3>Read this passage naturally</h3>
+            <p>
+                Small moments can make an ordinary day feel memorable. Morning light
+                enters the room, a warm drink is prepared, and the familiar sounds of
+                the neighborhood begin outside. Later, a short walk offers a chance
+                to notice the changing sky, the trees along the path, and the steady
+                rhythm of footsteps. When we give an activity our attention, simple
+                details are often easier to appreciate. Take your time reading, and
+                blink as you normally would.
+            </p>
+        </article>
+        <div class="blink-live-readout">
+            <span>Current average EAR</span>
+            <strong id="blinkEarReadout">--</strong>
+        </div>
+    </div>
+    <p class="eye-gaze-camera">
+        <span id="blinkCameraStatus">Camera is off.</span>
+        <span id="blinkFaceStatus">Waiting for the test to start.</span>
+    </p>
+
+    <div class="eye-progress-track" role="progressbar" aria-label="Blink monitoring progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="blinkProgress" class="eye-progress-fill"></div>
+    </div>
+    <p id="blinkProgressText" class="eye-progress-text">0%</p>
+</section>
+
+<p class="disclaimer">
+    This experimental monitoring feature does not detect, diagnose, or confirm any medical condition.
+    Blink measurements depend on lighting, glasses, and camera framing.
+</p>
+
+<script src="/js/eye-tests/calibration-ui.js?v=1" defer></script>
+<script src="/js/eye-tests/blink-monitoring.js?v=calibration-1" defer></script>
+<%- include("partials/footer") %>

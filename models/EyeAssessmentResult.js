@@ -26,6 +26,8 @@ const sampleSchema = new mongoose.Schema(
         timeSeconds: { type: Number, required: true },
         xPx: { type: Number, default: null },
         yPx: { type: Number, default: null },
+        targetXPx: { type: Number, default: null },
+        targetYPx: { type: Number, default: null },
         valid: { type: Boolean, required: true },
         onScreen: { type: Boolean, required: true },
         distanceMm: { type: Number, default: null },
@@ -42,20 +44,11 @@ const eyeAssessmentResultSchema = new mongoose.Schema(
             required: true,
             index: true,
         },
-        email: {
-            type: String,
-            required: true,
-            lowercase: true,
-            trim: true,
-        },
-        sessionId: {
-            type: String,
-            required: true,
-            unique: true,
-        },
+        email: { type: String, required: true, lowercase: true, trim: true },
+        sessionId: { type: String, required: true, unique: true },
         assessmentType: {
             type: String,
-            enum: ["attention", "saccadic"],
+            enum: ["attention", "saccadic", "smooth_pursuit", "blink_monitoring", "memory_tracking"],
             required: true,
         },
         status: {
@@ -97,6 +90,14 @@ const eyeAssessmentResultSchema = new mongoose.Schema(
             meanResponseLatencyMs: { type: Number, default: null },
             medianResponseLatencyMs: { type: Number, default: null },
             meanEndpointErrorPx: { type: Number, default: null },
+
+            // Smooth pursuit fields (was missing — this was the bug)
+            meanPositionErrorPx: { type: Number, default: null },
+            rmsePositionErrorPx: { type: Number, default: null },
+            trackingAccuracyPct: { type: Number, default: null },
+            pursuitGain: { type: Number, default: null },
+            catchUpSaccades: { type: Number, default: null },
+            trackingContinuityPct: { type: Number, default: null },
         },
         sampleQuality: {
             sampleRateHz: { type: Number, default: null },
@@ -111,6 +112,7 @@ const eyeAssessmentResultSchema = new mongoose.Schema(
             targetFixationRadiusDegrees: { type: Number, default: null },
             targetRadiusDegrees: { type: Number, default: null },
             targetsWithSufficientGazeSamples: { type: Number, default: null },
+            thresholdPx: { type: Number, default: null },
             qualityNotes: { type: [String], default: [] },
         },
         metricExplanations: {
@@ -128,7 +130,4 @@ const eyeAssessmentResultSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model(
-    "EyeAssessmentResult",
-    eyeAssessmentResultSchema
-);
+module.exports = mongoose.model("EyeAssessmentResult", eyeAssessmentResultSchema);

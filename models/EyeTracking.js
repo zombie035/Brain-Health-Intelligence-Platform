@@ -59,6 +59,17 @@ const eyeTrackingSchema = new mongoose.Schema(
             default: "heatmap_pixels"
         },
 
+        calibrationStatus: {
+            type: String,
+            enum: ["not_started", "completed"],
+            default: "not_started"
+        },
+
+        calibrationPointCount: {
+            type: Number,
+            default: 0
+        },
+
         heatmapFilename: {
             type: String,
             default: null

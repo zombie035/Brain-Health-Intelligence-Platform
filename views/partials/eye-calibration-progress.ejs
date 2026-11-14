@@ -1,0 +1,25 @@
+<aside
+    class="eye-calibration-panel"
+    data-calibration-panel
+    role="status"
+    aria-live="polite"
+    hidden
+>
+    <span class="eye-calibration-label">GAZEMAP CALIBRATION</span>
+    <strong data-calibration-title>Calibration starts when your camera is ready</strong>
+    <p data-calibration-target>
+        Follow each highlighted dot with your eyes. The test begins automatically after calibration.
+    </p>
+    <div
+        class="eye-calibration-progress"
+        data-calibration-progress
+        role="progressbar"
+        aria-label="Calibration progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+    >
+        <span data-calibration-fill></span>
+    </div>
+    <span class="eye-calibration-count" data-calibration-count>0 of 9 targets complete</span>
+</aside>

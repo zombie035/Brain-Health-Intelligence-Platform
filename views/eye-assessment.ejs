@@ -17,13 +17,13 @@
         <span class="eye-test-number">01</span>
         <h2>Attention Tracking Test</h2>
         <p>
-            Follow a series of screen targets while GazeMap records calibrated
-            gaze samples and their timing.
+            Complete browser-based calibration, then follow on-screen targets
+            while GazeMap records gaze coordinates and timing.
         </p>
         <ul>
             <li>About 20 seconds</li>
-            <li>Requires a webcam and saved GazeMap calibration</li>
-            <li>Stimulus appears in a fullscreen window</li>
+            <li>Requires browser camera permission</li>
+            <li>Calibration and stimulus stay on this webpage</li>
         </ul>
         <a
             class="btn"
@@ -53,11 +53,60 @@
         </a>
     </article>
 
-    <article class="eye-test-card eye-test-card-muted">
+    <article class="eye-test-card">
         <span class="eye-test-number">03</span>
         <h2>Smooth Pursuit</h2>
-        <p>This assessment is not available in this implementation phase.</p>
-        <button type="button" disabled>Coming later</button>
+        <p>
+            Follow a slowly moving target with your eyes to evaluate continuous
+            gaze tracking and pursuit gain.
+        </p>
+        <ul>
+            <li>30 seconds</li>
+            <li>Requires a webcam and saved GazeMap calibration</li>
+            <li>Stimulus appears in a fullscreen window</li>
+        </ul>
+        <a
+            class="btn"
+            href="/eye-assessment/<%= assessment._id %>/smooth-pursuit"
+        >
+            View instructions
+        </a>
+    </article>
+
+    <article class="eye-test-card">
+        <span class="eye-test-number">04</span>
+        <h2>Blink &amp; Fatigue Monitoring</h2>
+        <p>
+            Measures blink frequency, blink duration and eye closure over a short
+            recording to explore experimental fatigue-related observations.
+        </p>
+        <ul>
+            <li>About 30 seconds</li>
+            <li>Requires a webcam</li>
+            <li>No calibration required</li>
+        </ul>
+        <a
+            class="btn"
+            href="/eye-assessment/<%= assessment._id %>/blink-monitoring"
+        >
+            View instructions
+        </a>
+    </article>
+
+    <article class="eye-test-card">
+        <span class="eye-test-number">05</span>
+        <h2>Memory-Based Eye Tracking</h2>
+        <p>
+            Observe a series of words, then identify which ones you saw previously while your gaze is tracked.
+        </p>
+        <ul>
+            <li>About 60 seconds</li>
+            <li>Requires a webcam and saved GazeMap calibration</li>
+            <li>Keyboard inputs required (Y/N)</li>
+        </ul>
+        <a class="btn" href="/eye-assessment/<%= assessment._id %>/memory-tracking">
+            View instructions
+        </a>
     </article>
 </section>
 

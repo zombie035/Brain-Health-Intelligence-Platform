@@ -1,0 +1,77 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 03</span>
+    <h1>Smooth Pursuit Test</h1>
+    <p>
+        Calibrate in the browser, then follow the moving target smoothly with
+        your eyes while keeping your head still.
+    </p>
+</section>
+
+<section class="card eye-instructions">
+    <h2>Before you begin</h2>
+    <ol>
+        <li>Allow camera access and sit comfortably with your face visible.</li>
+        <li>Keep your head still and follow each calibration dot with your eyes.</li>
+        <li>After calibration, track the moving dot smoothly with your eyes.</li>
+        <li>The test starts automatically when calibration is complete.</li>
+    </ol>
+    <p>
+        The 30-second test runs in browser fullscreen with the camera preview
+        and stimulus on this page. No separate desktop window is opened.
+    </p>
+</section>
+
+<section
+    id="smoothPursuitTest"
+    class="card eye-test-runner"
+    data-assessment-id="<%= assessment._id %>"
+    data-gaze-ws-url="<%= typeof gazeWsUrl === 'string' && gazeWsUrl ? gazeWsUrl : 'ws://127.0.0.1:8001/ws/gaze' %>"
+>
+    <div class="eye-runner-heading">
+        <div>
+            <h2>Browser-based GazeMap</h2>
+            <p>Assessment for <strong><%= assessment.name %></strong></p>
+        </div>
+        <a href="/eye-assessment/<%= assessment._id %>">Back to assessments</a>
+    </div>
+
+    <div class="eye-gaze-stage eye-smooth-pursuit-stage" id="smoothPursuitStage">
+        <canvas
+            id="smoothPursuitCanvas"
+            aria-label="Smooth pursuit calibration targets and moving stimulus"
+        ></canvas>
+        <video id="smoothPursuitVideo" class="eye-camera-preview" autoplay playsinline muted aria-label="Live webcam preview"></video>
+        <%- include("partials/eye-calibration-progress") %>
+        <p id="smoothPursuitStageMessage" class="eye-gaze-stage-message">
+            Select Start Test to enter fullscreen, open your camera, and begin calibration.
+        </p>
+    </div>
+
+    <div class="eye-runner-actions">
+        <button class="btn" type="button" id="startSmoothPursuitTest">
+            Start Test
+        </button>
+        <button class="eye-cancel-button" type="button" id="cancelSmoothPursuitTest" hidden>
+            Cancel Test
+        </button>
+    </div>
+
+    <p id="smoothPursuitStatus" class="eye-status" role="status" aria-live="polite">
+        Ready. Fullscreen and camera access begin after you click Start Test.
+    </p>
+
+    <div class="eye-progress-track" role="progressbar" aria-label="Smooth pursuit progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="smoothPursuitProgress" class="eye-progress-fill"></div>
+    </div>
+    <p id="smoothPursuitProgressText" class="eye-progress-text">0%</p>
+</section>
+
+<p class="disclaimer">
+    This experimental eye-movement task does not measure brain activity and cannot diagnose neurological conditions.
+</p>
+
+<script src="/js/eye-tests/calibration-ui.js?v=1" defer></script>
+<script src="/js/eye-tests/smooth-pursuit.js?v=calibration-1" defer></script>
+<%- include("partials/footer") %>

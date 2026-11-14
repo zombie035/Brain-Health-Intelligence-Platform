@@ -1,0 +1,106 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 03 RESULTS</span>
+    <h1>Smooth Pursuit Results</h1>
+    <p>
+        <%= new Date(result.startedAt).toLocaleString("en-IN") %>
+        <span class="eye-status-pill eye-status-<%= result.status %>">
+            <%= result.status %>
+        </span>
+    </p>
+</section>
+
+<section class="card">
+    <p><%= result.message %></p>
+    <div class="eye-metric-grid">
+        <article class="eye-metric">
+            <span>Test duration</span>
+            <strong><%= result.durationSeconds == null ? "Unavailable" : `${result.durationSeconds} s` %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Tracking continuity</span>
+            <strong><%= result.measurements.trackingContinuityPct == null ? "Unavailable" : `${result.measurements.trackingContinuityPct}%` %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Tracking accuracy (within 3°)</span>
+            <strong><%= result.measurements.trackingAccuracyPct == null ? "Unavailable" : `${result.measurements.trackingAccuracyPct}%` %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Mean position error</span>
+            <strong><%= result.measurements.meanPositionErrorPx == null ? "Unavailable" : `${result.measurements.meanPositionErrorPx} px` %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Pursuit gain</span>
+            <strong><%= result.measurements.pursuitGain == null ? "Unavailable" : result.measurements.pursuitGain %></strong>
+        </article>
+        <article class="eye-metric">
+            <span>Catch-up saccades</span>
+            <strong><%= result.measurements.catchUpSaccades == null ? "Unavailable" : result.measurements.catchUpSaccades %></strong>
+        </article>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Gaze vs Target Trajectory</h2>
+    <p>The graph shows your gaze position (blue) tracking the moving target (red).</p>
+    <div class="eye-chart-wrap" style="height: 400px;">
+        <canvas id="trajectoryChart"></canvas>
+    </div>
+</section>
+
+<a class="btn" href="/eye-assessment/<%= assessment._id %>">
+    Return to Eye Assessment
+</a>
+<a class="eye-back-link" href="/dashboard/<%= assessment._id %>">
+    Dashboard
+</a>
+
+<p class="disclaimer">
+    These measurements are experimental observations, not a diagnosis or clinically validated screening result.
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="application/json" id="trajectory-samples"><%- JSON.stringify(result.samples || []).replace(/</g, "\\u003c") %></script>
+<script>
+    const samples = JSON.parse(document.getElementById("trajectory-samples").textContent);
+    const validSamples = samples.filter(s => s.valid && s.xPx != null && s.targetXPx != null);
+
+    const gazeData = validSamples.map(s => ({ x: s.timeSeconds, y: s.xPx }));
+    const targetData = samples.map(s => ({ x: s.timeSeconds, y: s.targetXPx }));
+
+    new Chart(document.getElementById("trajectoryChart"), {
+        type: "scatter",
+        data: {
+            datasets: [
+                {
+                    label: "Target Position (X)",
+                    data: targetData,
+                    borderColor: "#ef4444",
+                    backgroundColor: "#ef4444",
+                    showLine: true,
+                    borderWidth: 2,
+                    pointRadius: 0
+                },
+                {
+                    label: "Gaze Position (X)",
+                    data: gazeData,
+                    borderColor: "#3b82f6",
+                    backgroundColor: "#3b82f6",
+                    showLine: true,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: "Time (seconds)" } },
+                y: { title: { display: true, text: "Horizontal Position (pixels)" } }
+            }
+        }
+    });
+</script>
+<%- include("partials/footer") %>

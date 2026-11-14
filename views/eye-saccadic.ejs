@@ -4,23 +4,22 @@
     <span class="tag">ASSESSMENT 02</span>
     <h1>Saccadic Eye Movement Test</h1>
     <p>
-        Fixate the center mark, then shift your eyes to the left or right
-        target. GazeMap records target timing and calibrated gaze coordinates.
+        Calibrate your gaze in the browser, then quickly shift your eyes from
+        the center fixation mark to each side target.
     </p>
 </section>
 
 <section class="card eye-instructions">
     <h2>Before you begin</h2>
     <ol>
-        <li>Allow camera access to the GazeMap process if prompted.</li>
-        <li>Sit comfortably with your face visible and keep your head still.</li>
-        <li>Use the screen with your saved GazeMap calibration.</li>
-        <li>Click Start Test, focus the GazeMap window, and press Space.</li>
-        <li>Look at the center mark, then quickly shift your eyes to each side target. Press Esc to cancel.</li>
+        <li>Allow camera access and sit comfortably with your face visible.</li>
+        <li>Keep your head still and follow each calibration dot with your eyes.</li>
+        <li>After calibration, look at the center mark, then quickly shift to each side target.</li>
+        <li>The test starts automatically when calibration is complete.</li>
     </ol>
     <p>
-        The test runs 12 balanced left/right trials in a fullscreen stimulus
-        window. Keep this browser page open to see progress and results.
+        The assessment opens in browser fullscreen and streams camera frames
+        to GazeMap. No separate desktop camera or stimulus window is opened.
     </p>
 </section>
 
@@ -28,13 +27,26 @@
     id="saccadicTest"
     class="card eye-test-runner"
     data-assessment-id="<%= assessment._id %>"
+    data-gaze-ws-url="<%= typeof gazeWsUrl === 'string' && gazeWsUrl ? gazeWsUrl : 'ws://127.0.0.1:8001/ws/gaze' %>"
 >
     <div class="eye-runner-heading">
         <div>
-            <h2>Ready when you are</h2>
+            <h2>Browser-based GazeMap</h2>
             <p>Assessment for <strong><%= assessment.name %></strong></p>
         </div>
         <a href="/eye-assessment/<%= assessment._id %>">Back to assessments</a>
+    </div>
+
+    <div class="eye-gaze-stage eye-saccadic-stage" id="saccadicStage">
+        <canvas
+            id="saccadicCanvas"
+            aria-label="Saccadic calibration targets and stimuli"
+        ></canvas>
+        <video id="saccadicVideo" class="eye-camera-preview" autoplay playsinline muted aria-label="Live webcam preview"></video>
+        <%- include("partials/eye-calibration-progress") %>
+        <p id="saccadicStageMessage" class="eye-gaze-stage-message">
+            Select Start Test to enter fullscreen, open your camera, and begin calibration.
+        </p>
     </div>
 
     <div class="eye-runner-actions">
@@ -57,7 +69,7 @@
         role="status"
         aria-live="polite"
     >
-        Ready. The webcam starts only after you click Start Test.
+        Ready. Fullscreen and camera access begin after you click Start Test.
     </p>
 
     <div
@@ -79,5 +91,6 @@
     webcam sampling rate.
 </p>
 
-<script src="/js/eye-tests/saccadic.js" defer></script>
+<script src="/js/eye-tests/calibration-ui.js?v=1" defer></script>
+<script src="/js/eye-tests/saccadic.js?v=calibration-1" defer></script>
 <%- include("partials/footer") %>

@@ -1,0 +1,87 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 05</span>
+    <h1>Memory-Based Eye Tracking</h1>
+    <p>Study a short sequence of words, then identify which ones you saw earlier.</p>
+</section>
+
+<section class="card eye-instructions">
+    <h2>Before you begin</h2>
+    <ol>
+        <li>Allow camera access and position your face comfortably in view.</li>
+        <li>Keep your head still and follow each calibration dot with your eyes.</li>
+        <li>Read and remember each word during the study phase; no response is needed then.</li>
+        <li>After the words and short pause, choose <strong>Seen</strong> or <strong>Not seen</strong> during recognition.</li>
+    </ol>
+    <p>The webcam and memory task run entirely in this page. Keep your head comfortably still.</p>
+</section>
+
+<section
+    id="memoryTrackingTest"
+    class="card eye-test-runner"
+    data-assessment-id="<%= assessment._id %>"
+    data-gaze-ws-url="<%= gazeWsUrl %>"
+>
+    <div class="eye-runner-heading">
+        <div>
+            <h2>Ready when you are</h2>
+            <p>Assessment for <strong><%= assessment.name %></strong></p>
+        </div>
+        <a href="/eye-assessment/<%= assessment._id %>">Back to assessments</a>
+    </div>
+
+    <div class="eye-runner-actions">
+        <button class="btn" type="button" id="startMemoryTest">Start Test</button>
+        <button class="eye-cancel-button" type="button" id="cancelMemoryTest" hidden>
+            Cancel Test
+        </button>
+    </div>
+
+    <p id="memoryStatus" class="eye-status" role="status" aria-live="polite">
+        Ready. The webcam starts only after you click Start Test.
+    </p>
+
+    <div id="memoryStage" class="eye-gaze-stage eye-memory-stage">
+        <canvas id="memoryCanvas" aria-hidden="true"></canvas>
+        <video id="memoryVideo" class="eye-camera-preview" autoplay muted playsinline aria-label="Live webcam preview"></video>
+        <%- include("partials/eye-calibration-progress") %>
+        <p id="memoryStageMessage" class="memory-stage-message">
+            Your on-page calibration and memory task will appear here.
+        </p>
+        <article id="memoryStimulus" class="memory-stimulus" hidden>
+            <span id="memoryPhaseLabel" class="memory-phase-label"></span>
+            <h2 id="memoryWord"></h2>
+            <p id="memoryInstruction"></p>
+            <div id="memoryResponses" class="memory-response-buttons" hidden>
+                <button class="btn" type="button" id="memorySeenButton">Seen <kbd>Y</kbd></button>
+                <button class="eye-cancel-button" type="button" id="memoryNotSeenButton">Not seen <kbd>N</kbd></button>
+            </div>
+        </article>
+    </div>
+
+    <p class="eye-gaze-camera">
+        <span id="memoryCameraStatus">Camera is off.</span>
+        <span id="memoryFaceStatus">Waiting for the test to start.</span>
+    </p>
+
+    <div
+        class="eye-progress-track"
+        role="progressbar"
+        aria-label="Memory tracking progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+    >
+        <div id="memoryProgress" class="eye-progress-fill"></div>
+    </div>
+    <p id="memoryProgressText" class="eye-progress-text">0%</p>
+</section>
+
+<p class="disclaimer">
+    Experimental observations only. Not a diagnosis or clinically validated screening result.
+</p>
+
+<script src="/js/eye-tests/calibration-ui.js?v=1" defer></script>
+<script src="/js/eye-tests/memory-tracking.js?v=browser-memory-2" defer></script>
+<%- include("partials/footer") %>
