@@ -1,3 +1,19 @@
+# Python environments
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.pyc
+
+# Python logs
+**/*.log
+
+# Node dependencies
 node_modules/
+
+# Environment secrets
 .env
-.DS_StoreGazeMap/
+.env.*
+
+# IDE
+.vscode/
+.idea/
