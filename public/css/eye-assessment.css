@@ -1,0 +1,799 @@
+.eye-back-link {
+    display: inline-block;
+    margin-top: 16px;
+    color: var(--primary);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.eye-test-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.eye-test-card {
+    position: relative;
+    padding: 26px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+}
+
+.eye-test-card h2 {
+    margin: 10px 0;
+}
+
+.eye-test-card p,
+.eye-test-card li,
+.eye-result-row time {
+    color: var(--muted);
+}
+
+.eye-test-card ul {
+    margin: 16px 0 22px 20px;
+}
+
+.eye-test-card li {
+    margin: 5px 0;
+}
+
+.eye-test-number {
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.eye-test-card-muted {
+    background: #f8fafc;
+}
+
+.eye-test-card-muted button {
+    margin-top: 16px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    background: #e2e8f0;
+}
+
+.eye-previous-results {
+    margin-top: 28px;
+}
+
+.eye-results-list {
+    display: grid;
+    gap: 10px;
+}
+
+.eye-result-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) minmax(160px, auto) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.eye-result-row div {
+    display: grid;
+    gap: 4px;
+}
+
+.eye-result-row div span {
+    overflow-wrap: anywhere;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.eye-result-row a {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.eye-instructions ol {
+    margin: 12px 0 16px 22px;
+}
+
+.eye-instructions li {
+    margin: 7px 0;
+}
+
+.eye-instructions p {
+    color: var(--muted);
+}
+
+.eye-test-runner {
+    border-top: 4px solid var(--primary);
+}
+
+.eye-runner-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.eye-runner-heading p {
+    color: var(--muted);
+}
+
+.eye-runner-heading a {
+    color: var(--primary);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.eye-runner-actions {
+    margin: 22px 0 14px;
+}
+
+.eye-cancel-button {
+    margin-left: 10px;
+    padding: 12px 18px;
+    border: 1px solid #fecaca;
+    border-radius: 9px;
+    color: #b91c1c;
+    background: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.eye-cancel-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.eye-status {
+    min-height: 28px;
+    font-weight: 600;
+}
+
+.eye-progress-track {
+    height: 12px;
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e2e8f0;
+}
+
+.eye-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #2563eb, #10b981);
+    transition: width 180ms ease;
+}
+
+.eye-progress-text {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: right;
+}
+
+.eye-gaze-stage {
+    position: relative;
+    width: 100%;
+    min-height: 360px;
+    margin-top: 22px;
+    overflow: hidden;
+    border: 1px solid #263449;
+    border-radius: 14px;
+    background:
+        radial-gradient(ellipse at center, #17253a 0%, #0b1220 75%);
+}
+
+.eye-gaze-stage canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.eye-gaze-camera {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.eye-camera-preview {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 4;
+    box-sizing: border-box;
+    width: clamp(84px, 12vw, 144px);
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    background: #020617;
+    object-fit: cover;
+    transform: scaleX(-1);
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.28);
+}
+
+.eye-gaze-stage-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(80%, 540px);
+    margin: 0;
+    color: #e2e8f0;
+    font-weight: 600;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.eye-gaze-stage.eye-test-active .eye-gaze-stage-message {
+    display: none;
+}
+
+.eye-calibration-panel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 5;
+    box-sizing: border-box;
+    width: min(270px, calc(100% - 112px));
+    padding: 11px 13px;
+    border: 1px solid rgba(147, 197, 253, 0.55);
+    border-radius: 11px;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.96);
+    box-shadow: 0 10px 28px rgba(2, 6, 23, 0.32);
+    text-align: left;
+    pointer-events: none;
+}
+
+.eye-calibration-label {
+    display: block;
+    color: #93c5fd;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.eye-calibration-panel strong {
+    display: block;
+    margin-top: 3px;
+    font-size: 13px;
+}
+
+.eye-calibration-panel p {
+    margin: 4px 0 7px;
+    color: #cbd5e1;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.eye-calibration-progress {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.3);
+}
+
+.eye-calibration-progress span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #60a5fa, #34d399);
+    transition: width 180ms ease;
+}
+
+.eye-calibration-count {
+    display: block;
+    margin-top: 4px;
+    color: #94a3b8;
+    font-size: 10px;
+    text-align: right;
+}
+
+#blinkStage {
+    min-height: 460px;
+    border-color: #cbd5e1;
+    background: #e2e8f0;
+}
+
+#blinkStage #blinkVideo {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#blinkSignalCanvas {
+    inset: auto;
+    top: 64px;
+    right: 16px;
+    bottom: auto;
+    left: auto;
+    width: min(340px, calc(100% - 32px));
+    height: 88px;
+    border-radius: 8px;
+    opacity: 1;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.2);
+}
+
+#blinkMonitoringTest .eye-calibration-panel {
+    display: none !important;
+}
+
+.blink-eye-preview {
+    transform: none;
+}
+
+.blink-eye-preview canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#blinkEyePreview {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.blink-eye-preview span {
+    position: absolute;
+    top: 6px;
+    left: 7px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.76);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    pointer-events: none;
+}
+
+.blink-reading-paragraph {
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+    width: min(780px, calc(100% - 48px));
+    margin: 168px auto 96px;
+    padding: 20px 26px;
+    border: 1px solid #dbe3ee;
+    border-radius: 14px;
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+    text-align: left;
+}
+
+.blink-reading-paragraph h3 {
+    margin: 0 0 8px;
+    color: #0f172a;
+    font-size: 16px;
+}
+
+.blink-reading-paragraph p {
+    margin: 0;
+    font-size: clamp(16px, 1.8vw, 20px);
+    line-height: 1.65;
+}
+
+#blinkStage .eye-gaze-stage-message {
+    color: #475569;
+}
+
+#blinkStage .eye-gaze-live-indicator {
+    display: none;
+}
+
+.blink-live-readout {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    z-index: 1;
+    display: grid;
+    gap: 4px;
+    color: #334155;
+    font-size: 13px;
+    text-align: right;
+}
+
+.blink-live-readout strong {
+    color: #0f172a;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+}
+
+#memoryStage {
+    min-height: 420px;
+}
+
+.memory-stage-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(80%, 540px);
+    margin: 0;
+    color: #e2e8f0;
+    font-weight: 600;
+    text-align: center;
+    transform: translate(-50%, -50%);
+}
+
+.memory-stimulus {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+    box-sizing: border-box;
+    display: grid;
+    width: min(600px, calc(100% - 48px));
+    min-height: 230px;
+    padding: 28px;
+    border: 2px solid #dbeafe;
+    border-radius: 18px;
+    color: #0f172a;
+    background: #f8fafc;
+    box-shadow: 0 16px 48px rgba(2, 6, 23, 0.28);
+    place-content: center;
+    text-align: center;
+    transform: translate(-50%, -50%);
+}
+
+.memory-phase-label {
+    color: #475569;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.memory-stimulus h2 {
+    margin: 12px 0;
+    color: #0f172a;
+    font-size: clamp(42px, 8vw, 76px);
+    letter-spacing: 0.04em;
+}
+
+.memory-stimulus p {
+    margin: 0;
+    color: #475569;
+    font-size: 17px;
+}
+
+.memory-response-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.memory-response-buttons .eye-cancel-button {
+    margin-left: 0;
+}
+
+.memory-response-buttons kbd {
+    margin-left: 8px;
+    padding: 2px 6px;
+    border: 1px solid rgba(100, 116, 139, 0.4);
+    border-radius: 4px;
+    font: inherit;
+    font-size: 12px;
+}
+
+#memoryTrackingTest:fullscreen {
+    box-sizing: border-box;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    overflow: auto;
+    flex-direction: column;
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+}
+
+#memoryTrackingTest:fullscreen .eye-memory-stage {
+    flex: 1 1 auto;
+    min-height: 180px;
+    margin-top: 12px;
+}
+
+#memoryTrackingTest:fullscreen .eye-runner-heading h2 {
+    margin-top: 0;
+}
+
+#memoryTrackingTest:fullscreen .eye-runner-actions {
+    flex: 0 0 auto;
+    margin: 12px 0 4px;
+}
+
+#memoryTrackingTest:fullscreen .eye-status,
+#memoryTrackingTest:fullscreen .eye-progress-text {
+    flex: 0 0 auto;
+    margin-top: 5px;
+    margin-bottom: 4px;
+}
+
+#memoryTrackingTest:fullscreen .eye-progress-track {
+    flex: 0 0 12px;
+    margin-top: 4px;
+}
+
+#blinkMonitoringTest:fullscreen {
+    box-sizing: border-box;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    overflow: auto;
+    flex-direction: column;
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+}
+
+#blinkMonitoringTest:fullscreen .eye-blink-stage {
+    flex: 1 1 auto;
+    min-height: 180px;
+    margin-top: 12px;
+}
+
+#blinkMonitoringTest:fullscreen .eye-runner-heading h2 {
+    margin-top: 0;
+}
+
+#blinkMonitoringTest:fullscreen .eye-runner-actions {
+    flex: 0 0 auto;
+    margin: 12px 0 4px;
+}
+
+#blinkMonitoringTest:fullscreen .eye-status,
+#blinkMonitoringTest:fullscreen .eye-progress-text {
+    flex: 0 0 auto;
+    margin-top: 5px;
+    margin-bottom: 4px;
+}
+
+#blinkMonitoringTest:fullscreen .eye-progress-track {
+    flex: 0 0 12px;
+    margin-top: 4px;
+}
+
+#saccadicTest:fullscreen,
+#smoothPursuitTest:fullscreen {
+    box-sizing: border-box;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    overflow: auto;
+    flex-direction: column;
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+}
+
+#saccadicTest:fullscreen .eye-saccadic-stage,
+#smoothPursuitTest:fullscreen .eye-smooth-pursuit-stage {
+    flex: 1 1 auto;
+    min-height: 180px;
+    margin-top: 12px;
+}
+
+#saccadicTest:fullscreen .eye-runner-heading h2,
+#smoothPursuitTest:fullscreen .eye-runner-heading h2 {
+    margin-top: 0;
+}
+
+#saccadicTest:fullscreen .eye-runner-actions,
+#smoothPursuitTest:fullscreen .eye-runner-actions {
+    flex: 0 0 auto;
+    margin: 12px 0 4px;
+}
+
+#saccadicTest:fullscreen .eye-status,
+#saccadicTest:fullscreen .eye-progress-text,
+#smoothPursuitTest:fullscreen .eye-status,
+#smoothPursuitTest:fullscreen .eye-progress-text {
+    flex: 0 0 auto;
+    margin-top: 5px;
+    margin-bottom: 4px;
+}
+
+#saccadicTest:fullscreen .eye-progress-track,
+#smoothPursuitTest:fullscreen .eye-progress-track {
+    flex: 0 0 12px;
+    margin-top: 4px;
+}
+
+.eye-gaze-live-indicator {
+    position: absolute;
+    top: calc(20px + clamp(54px, 9vw, 108px));
+    left: 12px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #64748b;
+}
+
+.eye-gaze-stage.eye-camera-active .eye-gaze-live-indicator {
+    background: #10b981;
+}
+
+.eye-status-pill {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.eye-status-completed {
+    color: #047857;
+    background: #d1fae5;
+}
+
+.eye-status-incomplete,
+.eye-status-failed {
+    color: #b45309;
+    background: #fef3c7;
+}
+
+.eye-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.eye-metric {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.eye-metric span {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.eye-metric strong {
+    font-size: 19px;
+}
+
+.eye-quality-notes {
+    margin: 10px 0 12px 22px;
+}
+
+.eye-explanation {
+    padding: 10px 12px;
+    border-left: 3px solid #f59e0b;
+    background: #fffbeb;
+}
+
+.eye-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.eye-chart-wrap {
+    position: relative;
+    height: 360px;
+}
+
+.eye-chart-wrap h3 {
+    margin-bottom: 12px;
+}
+
+.eye-table-scroll {
+    margin-top: 20px;
+    overflow-x: auto;
+}
+
+.eye-target-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.eye-target-table th,
+.eye-target-table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.eye-target-table th {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+@media (max-width: 640px) {
+    .eye-gaze-stage {
+        min-height: 300px;
+    }
+
+    #blinkStage {
+        min-height: 420px;
+    }
+
+    .blink-reading-paragraph {
+        width: calc(100% - 24px);
+        margin: 150px 12px 88px;
+        padding: 14px 16px;
+    }
+
+    .blink-reading-paragraph p {
+        font-size: 16px;
+    }
+
+    #blinkSignalCanvas {
+        top: 58px;
+        right: 12px;
+        width: min(240px, calc(100% - 24px));
+        height: 64px;
+    }
+
+    #memoryStage {
+        min-height: 360px;
+    }
+
+    .memory-stimulus {
+        width: calc(100% - 24px);
+        min-height: 200px;
+        padding: 18px;
+    }
+
+    .memory-stimulus p {
+        font-size: 15px;
+    }
+
+    .memory-response-buttons {
+        flex-wrap: wrap;
+    }
+
+    .eye-runner-heading {
+        display: grid;
+    }
+
+    .eye-result-row {
+        grid-template-columns: 1fr auto;
+    }
+
+    .eye-result-row time {
+        grid-column: 1;
+    }
+
+    .eye-result-row a {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+    }
+}

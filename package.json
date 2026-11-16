@@ -1,0 +1,23 @@
+{
+  "name": "brainguard-ai",
+  "version": "1.0.0",
+  "description": "BrainGuard AI research prototype for sequential eye assessments and measurement reports. Not a diagnostic tool.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "ejs": "^7.0.2",
+    "express": "^5.3.0",
+    "mongoose": "^9.12.1"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

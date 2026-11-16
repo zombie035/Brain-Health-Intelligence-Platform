@@ -1,0 +1,45 @@
+<%- include("partials/header", { title }) %>
+
+<section class="page-heading">
+    <span class="tag">DASHBOARD</span>
+    <h1>Hello, <%= assessment.name %></h1>
+    <p>Your eye assessment session and health profile are saved.</p>
+    <a class="btn" href="/eye-assessment/<%= assessment._id %>/report">Open consolidated report</a>
+    <a class="eye-back-link" href="/history/<%= assessment._id %>">Assessment history</a>
+</section>
+
+<div class="dashboard-grid">
+    <article class="stat-card">
+        <p>Completed eye assessments</p>
+        <h2><%= completedCount %> / 4</h2>
+        <span>All four assessments are required for a report.</span>
+    </article>
+    <article class="stat-card">
+        <p>Sleep duration</p>
+        <h2><%= healthProfile.sleepHours %> hrs</h2>
+        <span>Self-reported daily average</span>
+    </article>
+    <article class="stat-card">
+        <p>Physical activity</p>
+        <h2><%= healthProfile.exerciseMinutes %> min</h2>
+        <span>Self-reported daily average</span>
+    </article>
+</div>
+
+<section class="card">
+    <h2>Health profile</h2>
+    <div class="profile-grid">
+        <p><strong>Age:</strong> <%= healthProfile.age %></p>
+        <p><strong>Preferred language:</strong> <%= healthProfile.language %></p>
+        <p><strong>Education:</strong> <%= healthProfile.educationLevel %></p>
+        <p><strong>Stress level:</strong> <%= healthProfile.stressLevel %> / 5</p>
+        <p><strong>Family history:</strong> <%= healthProfile.familyHistory %></p>
+    </div>
+</section>
+
+<p class="disclaimer">
+    Eye-tracking measurements are experimental observations. They do not measure brain activity
+    and cannot diagnose neurological conditions.
+</p>
+
+<%- include("partials/footer") %>

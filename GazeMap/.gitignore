@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.gazemap-env/
+playground.py
+.DS_Store
+
+# Data and large artifacts (not in git)
+dataset/
+*.pt
+*.pth
+*.zip
+results/*/folds/
+results/*/sample_results.csv
+archive/
+results/quick_*/
+
+# Demo, created on first run / per user
+face_landmarker.task
+calibration.json
+
+# Your recordings (copy the ones you want into assets/ by hand)
+heatmaps/
+
+# Stimulus images and videos: get_stimuli.py downloads the paintings and writes CREDITS.md
+stimuli/

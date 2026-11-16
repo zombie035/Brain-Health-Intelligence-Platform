@@ -1,0 +1,47 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">EYE ASSESSMENT · STEP 2 OF 3</span>
+    <h1>Four guided eye assessments</h1>
+    <p>Complete each test in order. The consolidated report unlocks after all four results are saved.</p>
+    <p>Assessment for <strong><%= assessment.name %></strong></p>
+</section>
+
+<section class="card">
+    <div class="eye-progress-track" role="progressbar"
+        aria-label="Assessment completion"
+        aria-valuemin="0" aria-valuemax="4" aria-valuenow="<%= completedCount %>">
+        <div class="eye-progress-fill" style="width: <%= completedCount * 25 %>%"></div>
+    </div>
+    <p class="eye-progress-text"><%= completedCount %> of 4 assessments completed</p>
+</section>
+
+<section class="eye-test-grid" aria-label="Eye assessments in required order">
+    <% steps.forEach((step, index) => { %>
+        <article class="eye-test-card">
+            <span class="eye-test-number"><%= String(index + 1).padStart(2, "0") %></span>
+            <p class="eye-status-pill eye-status-<%= step.completed ? "completed" : step.isCurrent ? "running" : "incomplete" %>">
+                <%= step.completed ? "Completed" : step.isCurrent ? "Ready" : "Locked" %>
+            </p>
+            <h2><%= step.title %></h2>
+            <p><%= step.description %></p>
+            <ul>
+                <% step.instructions.forEach(instruction => { %>
+                    <li><%= instruction %></li>
+                <% }); %>
+            </ul>
+            <% if (step.isCurrent) { %>
+                <a class="btn" href="<%= step.url %>">Read instructions and begin</a>
+            <% } else if (!step.completed) { %>
+                <span class="eye-back-link">Complete the earlier assessments to unlock</span>
+            <% } %>
+        </article>
+    <% }); %>
+</section>
+
+<p class="disclaimer">
+    These measurements are experimental observations, not a diagnosis or clinically validated
+    screening result. Eye movements do not directly measure brain activity.
+</p>
+
+<%- include("partials/footer") %>

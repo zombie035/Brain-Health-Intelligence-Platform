@@ -1,0 +1,45 @@
+<%- include("partials/header", { title }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT HISTORY</span>
+    <h1>Your previous sessions</h1>
+    <p>Reports are available after all four eye assessments are completed.</p>
+</section>
+
+<section class="card history-table-container">
+    <% if (history.length) { %>
+        <div class="history-table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Session</th>
+                        <th>Date</th>
+                        <th>Progress</th>
+                        <th>Next step</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% history.forEach(item => { %>
+                        <tr>
+                            <td><%= item.session %></td>
+                            <td><%= item.createdAt ? new Date(item.createdAt).toLocaleString("en-IN") : "N/A" %></td>
+                            <td><%= item.reportReady ? "4 / 4 complete" : "In progress" %></td>
+                            <td>
+                                <% if (item.reportReady) { %>
+                                    <a href="/eye-assessment/<%= item._id %>/report">View report</a>
+                                <% } else { %>
+                                    <a href="/eye-assessment/<%= item._id %>">Continue assessment</a>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    <% } else { %>
+        <p>No previous assessment sessions found.</p>
+    <% } %>
+</section>
+
+<a class="eye-back-link" href="/dashboard/<%= currentAssessment._id %>">Back to dashboard</a>
+<%- include("partials/footer") %>

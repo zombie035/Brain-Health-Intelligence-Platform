@@ -1,0 +1,96 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">ASSESSMENT 02</span>
+    <h1>Saccadic Eye Movement Test</h1>
+    <p>
+        Calibrate your gaze in the browser, then quickly shift your eyes from
+        the center fixation mark to each side target.
+    </p>
+</section>
+
+<section class="card eye-instructions">
+    <h2>Before you begin</h2>
+    <ol>
+        <li>Allow camera access and sit comfortably with your face visible.</li>
+        <li>Keep your head still and follow each calibration dot with your eyes.</li>
+        <li>After calibration, look at the center mark, then quickly shift to each side target.</li>
+        <li>The test starts automatically when calibration is complete.</li>
+    </ol>
+    <p>
+        The assessment opens in browser fullscreen and streams camera frames
+        to GazeMap. No separate desktop camera or stimulus window is opened.
+    </p>
+</section>
+
+<section
+    id="saccadicTest"
+    class="card eye-test-runner"
+    data-assessment-id="<%= assessment._id %>"
+    data-gaze-ws-url="<%= typeof gazeWsUrl === 'string' && gazeWsUrl ? gazeWsUrl : 'ws://127.0.0.1:8001/ws/gaze' %>"
+>
+    <div class="eye-runner-heading">
+        <div>
+            <h2>Browser-based GazeMap</h2>
+            <p>Assessment for <strong><%= assessment.name %></strong></p>
+        </div>
+        <a href="/eye-assessment/<%= assessment._id %>">Back to assessments</a>
+    </div>
+
+    <div class="eye-gaze-stage eye-saccadic-stage" id="saccadicStage">
+        <canvas
+            id="saccadicCanvas"
+            aria-label="Saccadic calibration targets and stimuli"
+        ></canvas>
+        <video id="saccadicVideo" class="eye-camera-preview" autoplay playsinline muted aria-label="Live webcam preview"></video>
+        <%- include("partials/eye-calibration-progress") %>
+        <p id="saccadicStageMessage" class="eye-gaze-stage-message">
+            Select Start Test to enter fullscreen, open your camera, and begin calibration.
+        </p>
+    </div>
+
+    <div class="eye-runner-actions">
+        <button class="btn" type="button" id="startSaccadicTest">
+            Start Test
+        </button>
+        <button
+            class="eye-cancel-button"
+            type="button"
+            id="cancelSaccadicTest"
+            hidden
+        >
+            Cancel Test
+        </button>
+    </div>
+
+    <p
+        id="saccadicStatus"
+        class="eye-status"
+        role="status"
+        aria-live="polite"
+    >
+        Ready. Fullscreen and camera access begin after you click Start Test.
+    </p>
+
+    <div
+        class="eye-progress-track"
+        role="progressbar"
+        aria-label="Saccadic test progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+    >
+        <div id="saccadicProgress" class="eye-progress-fill"></div>
+    </div>
+    <p id="saccadicProgressText" class="eye-progress-text">0%</p>
+</section>
+
+<p class="disclaimer">
+    This experimental eye-movement task does not measure brain activity and
+    cannot diagnose neurological conditions. Response timing is limited by the
+    webcam sampling rate.
+</p>
+
+<script src="/js/eye-tests/calibration-ui.js?v=1" defer></script>
+<script src="/js/eye-tests/saccadic.js?v=calibration-1" defer></script>
+<%- include("partials/footer") %>

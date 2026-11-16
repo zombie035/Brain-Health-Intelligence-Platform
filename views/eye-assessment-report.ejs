@@ -1,0 +1,156 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading">
+    <span class="tag">CONSOLIDATED EYE ASSESSMENT REPORT</span>
+    <h1>Assessment report for <%= assessment.name %></h1>
+    <p>This report combines the completed measurements recorded for this assessment session.</p>
+</section>
+
+<section class="card">
+    <h2>Session summary</h2>
+    <p>Four of four assessments have completed and their results are associated with this assessment session.</p>
+    <div class="profile-grid">
+        <p><strong>Age:</strong> <%= healthProfile.age %></p>
+        <p><strong>Preferred language:</strong> <%= healthProfile.language %></p>
+        <p><strong>Education:</strong> <%= healthProfile.educationLevel %></p>
+        <p><strong>Average sleep:</strong> <%= healthProfile.sleepHours %> hours/day</p>
+        <p><strong>Physical activity:</strong> <%= healthProfile.exerciseMinutes %> minutes/day</p>
+        <p><strong>Self-reported stress:</strong> <%= healthProfile.stressLevel %> / 5</p>
+        <p><strong>Family history:</strong> <%= healthProfile.familyHistory %></p>
+    </div>
+</section>
+
+<% reportSections.forEach(section => { %>
+    <section class="card">
+        <span class="tag"><%= section.number %> · COMPLETED</span>
+        <h2><%= section.title %></h2>
+        <p>Result session: <code><%= section.sessionId %></code></p>
+        <p>Recorded <%= section.startedAt ? new Date(section.startedAt).toLocaleString("en-IN") : "date unavailable" %>
+            · Duration: <%= section.durationSeconds == null ? "Unavailable" : `${section.durationSeconds} seconds` %>
+        </p>
+
+        <h3>Derived measurements</h3>
+        <% if (section.measurements.length) { %>
+            <div class="eye-metric-grid">
+                <% section.measurements.forEach(metric => { %>
+                    <article class="eye-metric">
+                        <span><%= metric.label %></span>
+                        <strong><%= metric.value %></strong>
+                    </article>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <p>No derived measurements were saved for this test.</p>
+        <% } %>
+
+        <h3>Calibration and tracking quality</h3>
+        <div class="profile-grid">
+            <% section.calibration.forEach(item => { %>
+                <p><strong><%= item.label %>:</strong> <%= item.value %></p>
+            <% }); %>
+            <% section.quality.forEach(item => { %>
+                <p><strong><%= item.label %>:</strong> <%= item.value %></p>
+            <% }); %>
+        </div>
+        <% if (section.qualityNotes.length) { %>
+            <ul class="eye-quality-notes">
+                <% section.qualityNotes.forEach(note => { %><li><%= note %></li><% }); %>
+            </ul>
+        <% } %>
+
+        <% if (section.observations.length) { %>
+            <h3>Algorithm-generated observations</h3>
+            <ul class="eye-quality-notes">
+                <% section.observations.forEach(note => { %><li><%= note %></li><% }); %>
+            </ul>
+        <% } %>
+
+        <% if (section.samples.length) { %>
+            <h3>Recorded gaze or eye-openness visualization</h3>
+            <p>Plot of available samples recorded during this test. Missing values are omitted.</p>
+            <div class="eye-chart-wrap" style="height: 320px;">
+                <canvas id="report-chart-<%= section.type %>"></canvas>
+            </div>
+        <% } %>
+    </section>
+<% }); %>
+
+<% if (heatmaps.length) { %>
+    <section class="card">
+        <h2>Gaze visualizations and heatmaps</h2>
+        <p>Heatmaps show the spatial distribution of recorded gaze points; they are descriptive visualizations.</p>
+        <% heatmaps.forEach(heatmap => { %>
+            <figure>
+                <figcaption><%= heatmap.stimulus %> · <%= heatmap.sampleCount %> samples · <%= new Date(heatmap.createdAt).toLocaleString("en-IN") %></figcaption>
+                <img
+                    src="/eye-tracking/heatmap/<%= encodeURIComponent(heatmap.heatmapFilename) %>"
+                    alt="Gaze heatmap for <%= heatmap.stimulus %>"
+                    style="display:block;width:100%;max-width:900px;height:auto;margin:16px auto;border-radius:12px;border:1px solid #ddd;"
+                >
+            </figure>
+        <% }); %>
+    </section>
+<% } %>
+
+<section class="card">
+    <h2>Observations, limitations, and next steps</h2>
+    <p>The report distinguishes recorded samples from derived measurements and algorithm-generated observations. Derived values depend on the experimental processing methods used by the application.</p>
+    <p>Camera position, lighting, glasses, head movement, screen size, and tracking quality can affect results. Measurements are not clinically validated and cannot diagnose, screen for, or rule out neurological or other medical conditions.</p>
+    <p>If you have a health concern or persistent symptoms, discuss them with a qualified healthcare professional. Repeat measurements under similar conditions only as a descriptive personal comparison.</p>
+</section>
+
+<a class="btn" href="/dashboard/<%= assessment._id %>">Continue to dashboard</a>
+<a class="eye-back-link" href="/history/<%= assessment._id %>">Assessment history</a>
+
+<p class="disclaimer">
+    BrainGuard AI is a research prototype, not a medical device. No result in this report is a confirmed medical finding.
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="eye-report-data" type="application/json"><%- JSON.stringify(reportSections.map(section => ({ type: section.type, samples: section.samples }))).replace(/</g, "\\u003c") %></script>
+<script>
+    const reportData = JSON.parse(document.getElementById("eye-report-data").textContent);
+
+    for (const section of reportData) {
+        const canvas = document.getElementById(`report-chart-${section.type}`);
+        if (!canvas) continue;
+
+        const samples = section.samples;
+        const labels = samples.map((sample, index) =>
+            sample.timeSeconds ?? sample.time ?? index
+        );
+        const datasets = section.type === "blink_monitoring"
+            ? [
+                { label: "Left eye EAR", data: samples.map(sample => sample.leftEAR), borderColor: "#3b82f6" },
+                { label: "Right eye EAR", data: samples.map(sample => sample.rightEAR), borderColor: "#f59e0b" },
+                { label: "Average EAR", data: samples.map(sample => sample.avgEAR), borderColor: "#10b981" },
+            ]
+            : [
+                { label: "Gaze X (px)", data: samples.map(sample => sample.valid ? sample.xPx : null), borderColor: "#3b82f6" },
+                { label: "Gaze Y (px)", data: samples.map(sample => sample.valid ? sample.yPx : null), borderColor: "#10b981" },
+                { label: "Target X (px)", data: samples.map(sample => sample.targetXPx ?? null), borderColor: "#ef4444" },
+            ];
+
+        new Chart(canvas, {
+            type: "line",
+            data: {
+                labels,
+                datasets: datasets.map(dataset => ({
+                    ...dataset,
+                    pointRadius: 0,
+                    borderWidth: 1.5,
+                    spanGaps: false,
+                })),
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: "Sample time (seconds, where available)" } },
+                    y: { title: { display: true, text: section.type === "blink_monitoring" ? "Eye aspect ratio" : "Position (pixels)" } },
+                },
+            },
+        });
+    }
+</script>
+<%- include("partials/footer") %>

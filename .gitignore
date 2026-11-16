@@ -1,0 +1,41 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Python environments and caches
+**/.venv/
+**/venv/
+**/.gazemap-env/
+**/__pycache__/
+**/*.pyc
+
+# Logs
+**/*.log
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Biometric / per-user data (never commit)
+profiles/
+**/calibration.json
+GazeMap/heatmaps/
+**/heatmaps/
+
+# Large or downloaded artifacts
+**/*.pt
+**/*.pth
+**/face_landmarker.task
+GazeMap/dataset/
+GazeMap/stimuli/
+GazeMap/models/
+
+# Generated code dumps
+combined_code.txt
+**/combined_code.txt
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
