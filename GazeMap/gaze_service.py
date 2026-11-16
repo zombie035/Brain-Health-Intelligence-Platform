@@ -1,10 +1,7 @@
 import asyncio
 import csv
 import json
-<<<<<<< HEAD
 import logging
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 import os
 import re
 import subprocess
@@ -30,11 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent
 GAZE_DEMO = BASE_DIR / "gaze_demo.py"
 HEATMAP_DIR = BASE_DIR / "heatmaps"
 ASSESSMENT_RESULTS_DIR = (
-<<<<<<< HEAD
     Path(tempfile.gettempdir()) / "BrainGuard" / "assessment-results"
-=======
-    Path(tempfile.gettempdir()) / "BrainGuard" / "attention-results"
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 )
 
 app = FastAPI(title="BrainGuard GazeMap API")
@@ -64,10 +57,7 @@ assessment_sessions = {}
 engine_lock = threading.Lock()
 websocket_guard = threading.Lock()
 websocket_active = False
-<<<<<<< HEAD
 logger = logging.getLogger(__name__)
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
 
 class RecordingRequest(BaseModel):
@@ -76,11 +66,7 @@ class RecordingRequest(BaseModel):
 
 
 class AssessmentStartRequest(BaseModel):
-<<<<<<< HEAD
     assessment_type: str = "saccadic"
-=======
-    assessment_type: str = "attention"
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
 
 class ScreenInitRequest(BaseModel):
@@ -322,21 +308,13 @@ def start_assessment(request: AssessmentStartRequest):
             ),
         )
 
-<<<<<<< HEAD
     if request.assessment_type != "saccadic":
-=======
-    if request.assessment_type not in {"attention", "saccadic"}:
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         raise HTTPException(
             status_code=400,
             detail="Unsupported assessment type.",
         )
 
-<<<<<<< HEAD
     target_count = 12
-=======
-    target_count = 12 if request.assessment_type == "saccadic" else 9
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
     session_id = uuid.uuid4().hex
     ASSESSMENT_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -351,15 +329,9 @@ def start_assessment(request: AssessmentStartRequest):
         session_id,
         "--assessment-type",
         request.assessment_type,
-<<<<<<< HEAD
         "--assessment-results-dir",
         str(ASSESSMENT_RESULTS_DIR),
         "--assessment-cancel-file",
-=======
-        "--attention-results-dir",
-        str(ASSESSMENT_RESULTS_DIR),
-        "--attention-cancel-file",
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         str(cancel_path),
     ]
 
@@ -649,10 +621,7 @@ async def gaze_websocket(websocket: WebSocket):
 
     origin = websocket.headers.get("origin")
     if origin not in allowed_origins:
-<<<<<<< HEAD
         logger.warning("Rejected gaze WebSocket from unapproved origin %r", origin)
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         await websocket.close(code=1008, reason="Origin is not allowed.")
         return
 
@@ -766,4 +735,4 @@ async def gaze_websocket(websocket: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="127.0.0.1", port=8001)

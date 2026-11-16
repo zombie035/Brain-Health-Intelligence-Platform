@@ -32,8 +32,10 @@ class FakeWebSocket:
         self.headers = {"origin": origin}
         self.responses = []
         self.closed = None
+        self.accepted = False
 
     async def accept(self):
+        self.accepted = True
         return None
 
     async def close(self, code, reason):
@@ -209,7 +211,6 @@ class GazeServiceAssessmentTests(unittest.TestCase):
         self.assertEqual(ended["status"], "failed")
 
     def test_rejects_unsupported_assessment_types(self):
-<<<<<<< HEAD
         for assessment_type in ("attention", "unsupported_type"):
             with self.subTest(assessment_type=assessment_type):
                 with self.assertRaises(HTTPException) as error:
@@ -219,15 +220,6 @@ class GazeServiceAssessmentTests(unittest.TestCase):
                         )
                     )
                 self.assertEqual(error.exception.status_code, 400)
-=======
-        with self.assertRaises(HTTPException) as error:
-            gaze_service.start_assessment(
-                gaze_service.AssessmentStartRequest(
-                    assessment_type="unsupported_type"
-                )
-            )
-        self.assertEqual(error.exception.status_code, 400)
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
     def test_smooth_pursuit_legacy_start_does_not_launch_desktop_process(self):
         with self.assertRaises(HTTPException) as error:
@@ -275,11 +267,8 @@ class GazeServiceAssessmentTests(unittest.TestCase):
             command[command.index("--assessment-type") + 1],
             "saccadic",
         )
-<<<<<<< HEAD
         self.assertIn("--assessment-results-dir", command)
         self.assertIn("--assessment-cancel-file", command)
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         with self.assertRaises(HTTPException) as legacy_overlap:
             gaze_service.start_recording(
                 gaze_service.RecordingRequest(
@@ -299,6 +288,35 @@ class GazeServiceAssessmentTests(unittest.TestCase):
 
 
 class GazeServiceWebSocketTests(unittest.IsolatedAsyncioTestCase):
+    async def test_rejects_unapproved_websocket_origin(self):
+        websocket = FakeWebSocket([], origin="http://example.test")
+        with patch.object(
+            gaze_service,
+            "allowed_origins",
+            ["http://localhost:3000", "http://127.0.0.1:3000"],
+        ):
+            await gaze_service.gaze_websocket(websocket)
+
+        self.assertFalse(websocket.accepted)
+        self.assertEqual(websocket.closed[0], 1008)
+
+    async def test_accepts_local_origin_and_initializes_gaze_session(self):
+        websocket = FakeWebSocket([{
+            "type": "init",
+            "requestId": "init-1",
+            "widthPx": 1280,
+            "heightPx": 720,
+        }])
+
+        with patch.object(gaze_service.engine, "set_screen") as set_screen, \
+                patch.object(gaze_service.engine, "reset_calibration"):
+            await gaze_service.gaze_websocket(websocket)
+
+        self.assertTrue(websocket.accepted)
+        set_screen.assert_called_once_with(1280, 720, 345.0)
+        self.assertEqual(websocket.responses[0]["type"], "initialized")
+        self.assertEqual(websocket.responses[0]["requestId"], "init-1")
+
     async def test_websocket_initializes_and_processes_browser_frames(self):
         frame_result = {
             "valid": True,

@@ -32,7 +32,6 @@ LONGER_CLOSURE_MAX_SECONDS = 2.0        # 2 s — above this is prolonged
 MIN_VALID_FRAMES = 30
 MIN_VALID_FRACTION = 0.5
 MIN_SAMPLE_RATE_HZ = 8.0
-<<<<<<< HEAD
 # Below this, brief blinks can fall between two frames (simulation: ~72% of
 # 80-250 ms blinks found at 12 Hz, ~96% at 30 Hz), so counts/durations are approximate.
 RECOMMENDED_SAMPLE_RATE_HZ = 20.0
@@ -40,8 +39,6 @@ RECOMMENDED_SAMPLE_RATE_HZ = 20.0
 # nothing can be said about what the eyes did during the gap.
 MAX_TRACKING_GAP_SECONDS = 0.5
 MIN_TRACKED_SECONDS_FOR_RATE = 10.0
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
 
 def ear(points):
@@ -131,7 +128,6 @@ def detect_blink_events(samples, threshold):
             continue
 
         now = sample["timeSeconds"]
-<<<<<<< HEAD
 
         # Tracking was lost between the previous valid sample and this one.
         # Do not stretch a closure across the gap (that created fake
@@ -147,8 +143,6 @@ def detect_blink_events(samples, threshold):
             state = "open"
             closure_start = None
 
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         is_closed = avg < threshold
 
         if state == "open" and is_closed:
@@ -217,7 +211,6 @@ def calculate_blink_metrics(samples):
         }
 
     total_duration = samples[-1]["timeSeconds"] - samples[0]["timeSeconds"]
-<<<<<<< HEAD
 
     # Time actually tracked = sum of gaps between consecutive valid samples,
     # ignoring gaps where tracking was lost.
@@ -238,9 +231,6 @@ def calculate_blink_metrics(samples):
                 tracking_losses += 1
         previous_valid_time = t_
     sample_rate_hz = (tracked_intervals / tracked_seconds) if tracked_seconds > 0 else None
-=======
-    sample_rate_hz = ((valid_frames - 1) / total_duration) if total_duration > 0 and valid_frames > 1 else None
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
     quality_notes = []
     if valid_frames < MIN_VALID_FRAMES:
@@ -249,7 +239,6 @@ def calculate_blink_metrics(samples):
         quality_notes.append("Less than 50% of frames contained valid eye landmarks.")
     if sample_rate_hz is not None and sample_rate_hz < MIN_SAMPLE_RATE_HZ:
         quality_notes.append(f"Low sample rate ({sample_rate_hz:.1f} Hz, need ≥{MIN_SAMPLE_RATE_HZ} Hz).")
-<<<<<<< HEAD
     elif sample_rate_hz is not None and sample_rate_hz < RECOMMENDED_SAMPLE_RATE_HZ:
         quality_notes.append(
             f"Sample rate was {sample_rate_hz:.1f} Hz (below {RECOMMENDED_SAMPLE_RATE_HZ:.0f} Hz): "
@@ -265,8 +254,6 @@ def calculate_blink_metrics(samples):
         quality_notes.append(
             f"Only {tracked_seconds:.1f} s of eye tracking available; blink rate not reported."
         )
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
     # Baseline from first 60 valid samples (open-eye EAR for personalization)
     valid_ears = [
@@ -285,16 +272,10 @@ def calculate_blink_metrics(samples):
     blink_durations = [e["durationMs"] for e in blink_events]
     closure_durations = [e["durationMs"] for e in closure_events]
 
-<<<<<<< HEAD
     # Rate is over time the eyes were actually tracked, not the wall-clock span.
     blinks_per_minute = None
     if tracked_seconds >= MIN_TRACKED_SECONDS_FOR_RATE:
         blinks_per_minute = (len(blink_events) / tracked_seconds) * 60.0
-=======
-    blinks_per_minute = None
-    if total_duration > 0:
-        blinks_per_minute = (len(blink_events) / total_duration) * 60.0
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
     prolonged_count = sum(1 for e in closure_events if e["category"] == "prolonged_closure")
     longer_count = sum(1 for e in closure_events if e["category"] == "longer_closure")
@@ -328,11 +309,8 @@ def calculate_blink_metrics(samples):
         "validTrackingPct": round((valid_fraction or 0) * 100.0, 1) if valid_fraction is not None else None,
         "totalFrames": total_frames,
         "validFrames": valid_frames,
-<<<<<<< HEAD
         "trackedSeconds": round(tracked_seconds, 2),
         "sampleRateHz": round(sample_rate_hz, 1) if sample_rate_hz is not None else None,
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
     }
 
     return {

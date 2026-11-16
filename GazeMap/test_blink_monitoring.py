@@ -118,7 +118,6 @@ class MetricAggregationTests(unittest.TestCase):
 
         result = calculate_blink_metrics(samples)
         self.assertEqual(result["measurements"]["totalBlinks"], 1)
-<<<<<<< HEAD
         # ~2 s of data is too short for a meaningful rate, so none is reported
         self.assertIsNone(result["measurements"]["blinksPerMinute"])
         self.assertIsNotNone(result["sampleQuality"]["baselineEAR"])
@@ -177,11 +176,5 @@ class TrackingLossAndRateTests(unittest.TestCase):
         self.assertIsNone(result["measurements"]["blinksPerMinute"])
 
 
-=======
-        self.assertGreater(result["measurements"]["blinksPerMinute"], 0)
-        self.assertIsNotNone(result["sampleQuality"]["baselineEAR"])
-
-
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 if __name__ == "__main__":
     unittest.main()
