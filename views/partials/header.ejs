@@ -1,31 +1,35 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f6f2ec">
 
     <title><%= title || "BrainGuard AI" %></title>
 
+    <script>document.documentElement.classList.add("js");</script>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/theme.css?v=1">
     <% if (typeof pageStylesheet !== "undefined" && pageStylesheet) { %>
         <link rel="stylesheet" href="/css/<%= pageStylesheet %>?v=eye-assessment-2">
     <% } %>
+    <script src="/js/theme.js" defer></script>
 </head>
 <body>
 
-<header class="navbar">
+<header class="navbar" id="siteNav">
     <a href="/" class="logo">
         <span class="logo-icon">B</span>
-        BrainGuard AI
+        <span>BrainGuard AI</span>
     </a>
 
-    <nav>
+    <button class="nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="siteMenu">
+        <span></span><span></span><span></span>
+    </button>
+
+    <nav id="siteMenu" aria-label="Main">
         <a href="/">Home</a>
-<<<<<<< HEAD
-=======
-        <a href="/assessment">Assessment</a>
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
+        <a href="/health">Assessment</a>
     </nav>
 </header>
 

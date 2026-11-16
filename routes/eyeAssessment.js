@@ -6,7 +6,6 @@ const Assessment = require("../models/Assessment");
 const EyeAssessmentResult = require("../models/EyeAssessmentResult");
 const BlinkMonitoringResult = require("../models/BlinkMonitoringResult");
 const MemoryEyeTracking = require("../models/MemoryEyeTracking");
-<<<<<<< HEAD
 const EyeTracking = require("../models/EyeTracking");
 const HealthProfile = require("../models/HealthProfile");
 const {
@@ -157,11 +156,6 @@ async function getCompletionDestination(assessmentId) {
         ? `/eye-assessment/${assessmentId}/report`
         : `/eye-assessment/${assessmentId}`;
 }
-=======
-
-const router = express.Router();
-const GAZE_API = process.env.GAZE_API_URL || "http://127.0.0.1:8001";
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
 async function gazeRequest(endpoint, options = {}) {
     const response = await fetch(`${GAZE_API}${endpoint}`, {
@@ -312,61 +306,6 @@ async function saveMemoryCompletedResult(assessment, sessionId, data) {
     );
 }
 
-<<<<<<< HEAD
-=======
-async function startEyeAssessment(req, res, assessmentType) {
-    try {
-        if (!validateAssessmentId(req.params.id, res)) return;
-        const assessment = await Assessment.findById(req.params.id);
-        if (!assessment) {
-            return res.status(404).json({
-                success: false,
-                message: "Assessment not found.",
-            });
-        }
-
-        const started = await gazeRequest("/assessment/start", {
-            method: "POST",
-            body: JSON.stringify({ assessment_type: assessmentType }),
-        });
-
-        try {
-            await EyeAssessmentResult.create({
-                assessment: assessment._id,
-                email: assessment.email,
-                sessionId: started.sessionId,
-                assessmentType,
-                status: "running",
-                message: started.message,
-            });
-        } catch (error) {
-            try {
-                await gazeRequest(
-                    `/assessment/cancel/${started.sessionId}`,
-                    { method: "POST" }
-                );
-            } catch (cancelError) {
-                console.error("Could not cancel unpersisted gaze session:", cancelError);
-            }
-            throw error;
-        }
-
-        res.status(202).json({
-            success: true,
-            sessionId: started.sessionId,
-            status: started.status,
-            message: started.message,
-        });
-    } catch (error) {
-        sendApiError(
-            res,
-            error,
-            `${assessmentType[0].toUpperCase()}${assessmentType.slice(1)} assessment start error`
-        );
-    }
-}
-
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 async function eyeAssessmentStatus(req, res, assessmentType) {
     try {
         if (!validateAssessmentId(req.params.id, res)) return;
@@ -441,11 +380,7 @@ async function eyeAssessmentStatus(req, res, assessmentType) {
             message: status.message,
             progress: status.progress,
             running: status.running,
-<<<<<<< HEAD
             resultUrl: await getCompletionDestination(assessment._id),
-=======
-            resultUrl: `/eye-assessment/${assessment._id}/results/${req.params.sessionId}`,
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         });
     } catch (error) {
         sendApiError(
@@ -757,11 +692,7 @@ async function completeBrowserMemoryAssessment(req, res) {
 
         res.json({
             success: true,
-<<<<<<< HEAD
             resultUrl: await getCompletionDestination(saved.assessment),
-=======
-            resultUrl: `/eye-assessment/${saved.assessment}/results/${saved.sessionId}`,
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         });
     } catch (error) {
         sendApiError(res, error, "Memory browser assessment save error");
@@ -976,7 +907,6 @@ async function completeBrowserBlinkAssessment(req, res) {
                 message: "The blink session is no longer running.",
             });
         }
-<<<<<<< HEAD
         try {
             await saveBlinkCompletedResult(
                 { _id: saved.assessment, email: saved.email },
@@ -1004,17 +934,6 @@ async function completeBrowserBlinkAssessment(req, res) {
         res.json({
             success: true,
             resultUrl: await getCompletionDestination(saved.assessment),
-=======
-        await saveBlinkCompletedResult(
-            { _id: saved.assessment, email: saved.email },
-            saved.sessionId,
-            data
-        );
-
-        res.json({
-            success: true,
-            resultUrl: `/eye-assessment/${saved.assessment}/results/${saved.sessionId}`,
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         });
     } catch (error) {
         sendApiError(res, error, "Blink browser assessment save error");
@@ -1200,11 +1119,7 @@ async function completeBrowserSaccadicAssessment(req, res) {
 
         res.json({
             success: true,
-<<<<<<< HEAD
             resultUrl: await getCompletionDestination(saved.assessment),
-=======
-            resultUrl: `/eye-assessment/${saved.assessment}/results/${saved.sessionId}`,
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         });
     } catch (error) {
         sendApiError(res, error, "Saccadic browser assessment save error");
@@ -1407,11 +1322,7 @@ async function completeBrowserSmoothPursuitAssessment(req, res) {
 
         res.json({
             success: true,
-<<<<<<< HEAD
             resultUrl: await getCompletionDestination(saved.assessment),
-=======
-            resultUrl: `/eye-assessment/${saved.assessment}/results/${saved.sessionId}`,
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         });
     } catch (error) {
         sendApiError(res, error, "Smooth pursuit browser assessment save error");
@@ -1458,7 +1369,6 @@ async function cancelBrowserSmoothPursuitAssessment(req, res) {
     }
 }
 
-<<<<<<< HEAD
 router.get("/eye-assessment/:id/report", async (req, res) => {
     try {
         if (!validateAssessmentId(req.params.id, res)) return;
@@ -1526,15 +1436,12 @@ router.get("/eye-assessment/:id/report", async (req, res) => {
     }
 });
 
-=======
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 router.get("/eye-assessment/:id", async (req, res) => {
     try {
         if (!validateAssessmentId(req.params.id, res)) return;
         const assessment = await loadAssessment(req.params.id, res);
         if (!assessment) return;
 
-<<<<<<< HEAD
         const progress = await getAssessmentProgress(assessment._id);
         if (!progress.profileComplete) return res.redirect("/health");
         if (progress.complete) {
@@ -1548,24 +1455,12 @@ router.get("/eye-assessment/:id", async (req, res) => {
             isCurrent: progress.nextAssessment?.type === step.type,
             url: `/eye-assessment/${assessment._id}/${step.path}`,
         }));
-=======
-        const results = await EyeAssessmentResult.find({
-            assessment: assessment._id,
-        })
-            .sort({ createdAt: -1 })
-            .limit(10)
-            .lean();
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
         res.render("eye-assessment", {
             title: "Eye Assessment - BrainGuard AI",
             assessment,
-<<<<<<< HEAD
             steps,
             completedCount,
-=======
-            results,
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
             pageStylesheet: "eye-assessment.css",
         });
     } catch (error) {
@@ -1574,27 +1469,6 @@ router.get("/eye-assessment/:id", async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-=======
-router.get("/eye-assessment/:id/attention", async (req, res) => {
-    try {
-        if (!validateAssessmentId(req.params.id, res)) return;
-        const assessment = await loadAssessment(req.params.id, res);
-        if (!assessment) return;
-
-        res.render("eye-attention", {
-            title: "Attention Tracking Test - BrainGuard AI",
-            assessment,
-            gazeWsUrl: process.env.GAZE_WS_URL || "ws://127.0.0.1:8001/ws/gaze",
-            pageStylesheet: "eye-assessment.css",
-        });
-    } catch (error) {
-        console.error("Attention test page error:", error);
-        res.status(500).send("Unable to load the attention test.");
-    }
-});
-
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 router.get("/eye-assessment/:id/saccadic", async (req, res) => {
     try {
         if (!validateAssessmentId(req.params.id, res)) return;
@@ -1745,24 +1619,6 @@ router.get(
     (req, res) => eyeAssessmentStatus(req, res, "smooth_pursuit")
 );
 
-<<<<<<< HEAD
-=======
-for (const assessmentType of ["attention"]) {
-    router.post(
-        `/eye-assessment/:id/${assessmentType}/start`,
-        (req, res) => startEyeAssessment(req, res, assessmentType)
-    );
-    router.get(
-        `/eye-assessment/:id/${assessmentType}/:sessionId/status`,
-        (req, res) => eyeAssessmentStatus(req, res, assessmentType)
-    );
-    router.post(
-        `/eye-assessment/:id/${assessmentType}/:sessionId/cancel`,
-        (req, res) => cancelEyeAssessment(req, res, assessmentType)
-    );
-}
-
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 router.get(
     "/eye-assessment/:id/memory_tracking/:sessionId/status",
     (req, res) => eyeAssessmentStatus(req, res, "memory_tracking")
@@ -1808,7 +1664,6 @@ router.get(
             result.metricExplanations = result.metricExplanations || {};
             result.targets = result.targets || [];
 
-<<<<<<< HEAD
             if (result.assessmentType === "saccadic") {
                 return res.render("eye-saccadic-results", {
                     title: "Saccadic Eye Movement Results - BrainGuard AI",
@@ -1826,23 +1681,6 @@ router.get(
                 });
             }
             if (result.assessmentType === "blink_monitoring") {
-=======
-            const saccadic = result.assessmentType === "saccadic";
-            const smoothPursuit = result.assessmentType === "smooth_pursuit";
-            const blinkMonitoring = result.assessmentType === "blink_monitoring";
-            const memoryTracking = result.assessmentType === "memory_tracking";
-
-            let template = "eye-results";
-            let title = "Attention Test Results - BrainGuard AI";
-
-            if (saccadic) {
-                template = "eye-saccadic-results";
-                title = "Saccadic Eye Movement Results - BrainGuard AI";
-            } else if (smoothPursuit) {
-                template = "eye-smooth-pursuit-results";
-                title = "Smooth Pursuit Results - BrainGuard AI";
-            } else if (blinkMonitoring) {
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
                 // Load blink result from the dedicated model
                 const blinkResult = await BlinkMonitoringResult.findOne({
                     assessment: assessment._id,
@@ -1864,12 +1702,8 @@ router.get(
                     result: blinkResult,
                     pageStylesheet: "eye-assessment.css",
                 });
-<<<<<<< HEAD
             }
             if (result.assessmentType === "memory_tracking") {
-=======
-            } else if (memoryTracking) {
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
                 // Load memory result from the dedicated model
                 const memResult = await MemoryEyeTracking.findOne({
                     assessment: assessment._id,
@@ -1890,17 +1724,7 @@ router.get(
                     pageStylesheet: "eye-assessment.css",
                 });
             }
-<<<<<<< HEAD
             return res.status(404).send("Eye assessment result type not found.");
-=======
-
-            res.render(template, {
-                title: title,
-                assessment,
-                result,
-                pageStylesheet: "eye-assessment.css",
-            });
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         } catch (error) {
             console.error("Eye assessment results page error:", error);
             res.status(500).send("Unable to load eye assessment results.");

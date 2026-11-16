@@ -227,8 +227,6 @@ select:focus {
     border-color: var(--primary);
 }
 
-<<<<<<< HEAD
-=======
 .word-list,
 .number-sequence {
     padding: 20px;
@@ -260,7 +258,6 @@ select:focus {
     font-weight: 600;
 }
 
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

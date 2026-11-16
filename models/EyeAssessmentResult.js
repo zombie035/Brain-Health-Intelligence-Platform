@@ -48,11 +48,7 @@ const eyeAssessmentResultSchema = new mongoose.Schema(
         sessionId: { type: String, required: true, unique: true },
         assessmentType: {
             type: String,
-<<<<<<< HEAD
             enum: ["saccadic", "smooth_pursuit", "blink_monitoring", "memory_tracking"],
-=======
-            enum: ["attention", "saccadic", "smooth_pursuit", "blink_monitoring", "memory_tracking"],
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
             required: true,
         },
         status: {

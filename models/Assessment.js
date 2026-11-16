@@ -12,29 +12,6 @@ const assessmentSchema = new mongoose.Schema({
         required: true,
         lowercase: true,
         trim: true
-<<<<<<< HEAD
-=======
-    },
-
-    memoryCorrect: {
-        type: Number,
-        required: true
-    },
-
-    memoryTotal: {
-        type: Number,
-        default: 5
-    },
-
-    attentionCorrect: {
-        type: Boolean,
-        required: true
-    },
-
-    reactionMs: {
-        type: Number,
-        required: true
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
     }
 }, {
     timestamps: true

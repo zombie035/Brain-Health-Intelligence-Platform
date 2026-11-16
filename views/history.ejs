@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <%- include("partials/header", { title }) %>
 
 <section class="page-heading">
@@ -11,54 +10,10 @@
     <% if (history.length) { %>
         <div class="history-table-container">
             <table class="history-table">
-=======
-
-<%- include("partials/header") %>
-
-<div class="container">
-
-    <div class="page-heading">
-        <h1>Assessment History</h1>
-        <p>Track your previous cognitive assessment sessions.</p>
-    </div>
-
-    <div class="history-summary">
-
-        <div class="summary-card">
-            <h3>Total Sessions</h3>
-            <h2><%= history.length %></h2>
-        </div>
-
-        <div class="summary-card">
-            <h3>Latest Memory</h3>
-            <h2>
-                <%= history.length ? history[0].memoryPct + "%" : "N/A" %>
-            </h2>
-        </div>
-
-        <div class="summary-card">
-            <h3>Latest Reaction</h3>
-            <h2>
-                <%= history.length ? history[0].reactionMs + " ms" : "N/A" %>
-            </h2>
-        </div>
-
-    </div>
-
-    <div class="history-table-container">
-
-        <h2>Previous Assessments</h2>
-
-        <% if (history.length > 0) { %>
-
-            <table class="history-table">
-
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
                 <thead>
                     <tr>
                         <th>Session</th>
                         <th>Date</th>
-<<<<<<< HEAD
                         <th>Progress</th>
                         <th>Next step</th>
                     </tr>
@@ -87,72 +42,4 @@
 </section>
 
 <a class="eye-back-link" href="/dashboard/<%= currentAssessment._id %>">Back to dashboard</a>
-=======
-                        <th>Memory</th>
-                        <th>Attention</th>
-                        <th>Reaction Time</th>
-                        <th>Report</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <% history.forEach(item => { %>
-
-                        <tr>
-
-                            <td>
-                                <%= item.session %>
-                            </td>
-
-                            <td>
-                                <%= item.createdAt
-                                    ? new Date(item.createdAt).toLocaleString("en-IN")
-                                    : "N/A" %>
-                            </td>
-
-                            <td>
-                                <%= item.memoryPct %>%
-                            </td>
-
-                            <td>
-                                <%= item.attentionPct %>%
-                            </td>
-
-                            <td>
-                                <%= item.reactionMs %> ms
-                            </td>
-
-                            <td>
-                                <a href="/dashboard/<%= item._id %>">
-                                    View Report
-                                </a>
-                            </td>
-
-                        </tr>
-
-                    <% }) %>
-
-                </tbody>
-
-            </table>
-
-        <% } else { %>
-
-            <p>No previous assessments found.</p>
-
-        <% } %>
-
-    </div>
-
-    <a
-        href="/dashboard/<%= currentAssessment._id %>"
-        class="back-button"
-    >
-        Back to Dashboard
-    </a>
-
-</div>
-
->>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 <%- include("partials/footer") %>
