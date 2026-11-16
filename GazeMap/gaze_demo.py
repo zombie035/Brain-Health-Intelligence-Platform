@@ -3,7 +3,10 @@ import argparse
 import bisect
 import datetime
 import json
+<<<<<<< HEAD
 import os
+=======
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 import random as _random
 from collections import deque
 from collections.abc import MutableMapping
@@ -52,6 +55,7 @@ SETTLE_SECONDS = 1.0
 COLLECT_SECONDS = 1.5
 
 
+<<<<<<< HEAD
 def write_json_atomic(path, payload):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -70,6 +74,8 @@ def write_json_atomic(path, payload):
         os.replace(temporary_path, path)
 
 
+=======
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 def download_models(model_dir):
     print(f"No trained models in {model_dir}. Downloading them once from\n  {MODELS_URL}")
     model_dir.mkdir(parents=True, exist_ok=True)
@@ -1496,7 +1502,13 @@ def run_selftest(args, models, face_model):
 
 
 def run_eye_assessment(args, models, face_model):
+<<<<<<< HEAD
     assessment_type = getattr(args, "assessment_type", "saccadic")
+=======
+    import attention_assessment
+
+    assessment_type = getattr(args, "assessment_type", "attention")
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
     memory_tracking_assessment = None
     if assessment_type == "saccadic":
         import saccadic_assessment
@@ -1517,6 +1529,7 @@ def run_eye_assessment(args, models, face_model):
         smooth_pursuit_assessment = None
         blink_monitoring = None
     else:
+<<<<<<< HEAD
         raise ValueError(f"Unsupported assessment type: {assessment_type}")
 
     session_id = args.assessment_session_id
@@ -1524,6 +1537,21 @@ def run_eye_assessment(args, models, face_model):
     status_path = results_dir / f"{session_id}.status.json"
     result_path = results_dir / f"{session_id}.json"
     cancel_path = Path(args.assessment_cancel_file)
+=======
+        saccadic_assessment = None
+        smooth_pursuit_assessment = None
+        blink_monitoring = None
+
+    session_id = getattr(
+        args,
+        "assessment_session_id",
+        getattr(args, "attention_session_id", None),
+    )
+    results_dir = Path(args.attention_results_dir)
+    status_path = results_dir / f"{session_id}.status.json"
+    result_path = results_dir / f"{session_id}.json"
+    cancel_path = Path(args.attention_cancel_file)
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
     target_count = (
         saccadic_assessment.TRIAL_COUNT
         if assessment_type == "saccadic" and saccadic_assessment is not None
@@ -1532,7 +1560,11 @@ def run_eye_assessment(args, models, face_model):
     results_dir.mkdir(parents=True, exist_ok=True)
 
     def update_status(status, message, progress=0, target_index=0):
+<<<<<<< HEAD
         write_json_atomic(status_path, {
+=======
+        attention_assessment.write_json_atomic(status_path, {
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
             "sessionId": session_id,
             "status": status,
             "message": message,
@@ -1624,7 +1656,17 @@ def run_eye_assessment(args, models, face_model):
                 "Press SPACE to begin. Press ESC to cancel.",
             ]
         else:
+<<<<<<< HEAD
             raise ValueError(f"Unsupported assessment type: {assessment_type}")
+=======
+            instruction = np.zeros((height, width, 3), np.uint8)
+            lines = [
+                "ATTENTION TRACKING TEST",
+                "Keep your head still and follow each target with your eyes.",
+                "Look at the center fixation mark between targets.",
+                "Press SPACE to begin. Press ESC to cancel.",
+            ]
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
         for index, line in enumerate(lines):
             scale = 1.0 if index == 0 else 0.7
@@ -1649,7 +1691,11 @@ def run_eye_assessment(args, models, face_model):
         if getattr(
             args,
             "assessment_auto_start",
+<<<<<<< HEAD
             False,
+=======
+            getattr(args, "attention_auto_start", False),
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         ):
             session_start = time.perf_counter()
             session_started_at = datetime.datetime.now(
@@ -1767,8 +1813,13 @@ def run_eye_assessment(args, models, face_model):
 
                 final_status = "completed"
                 # Smooth pursuit already ran its own loop above.
+<<<<<<< HEAD
                 # Provide empty timeline/targets so the shared stimulus loop below
                 # safely skips without raising NameError.
+=======
+                # Provide empty timeline/targets so the shared saccadic/attention
+                # block below safely skips without raising NameError.
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
                 timeline = []
                 targets = []
 
@@ -2219,7 +2270,16 @@ def run_eye_assessment(args, models, face_model):
                     if stage["kind"] == "target"
                     else (0.0 if assessment_type == "saccadic" else 1.0)
                 )
+<<<<<<< HEAD
                 completed = target_index
+=======
+                completed = target_index + (
+                    1
+                    if stage["kind"] == "fixation"
+                    and assessment_type == "attention"
+                    else 0
+                )
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
                 progress = int(
                     ((completed + phase_progress) / len(targets)) * 100
                 )
@@ -2355,7 +2415,11 @@ def run_eye_assessment(args, models, face_model):
                 if captured_seconds - last_status_update >= 0.5:
                     update_status(
                         "running",
+<<<<<<< HEAD
                         f"{assessment_type.title()} assessment is in progress.",
+=======
+                        "Attention test is in progress.",
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
                         progress,
                         min(target_index + 1, len(targets)),
                     )
@@ -2409,7 +2473,17 @@ def run_eye_assessment(args, models, face_model):
                 samples, targets  # `targets` == trials_data for memory_tracking
             )
         else:
+<<<<<<< HEAD
             raise ValueError(f"Unsupported assessment type: {assessment_type}")
+=======
+            metrics = attention_assessment.calculate_attention_metrics(
+                samples,
+                targets,
+                screen_data["widthPx"] or 1,
+                screen_data["heightPx"] or 1,
+                mm_per_px,
+            )
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         result = {
             "sessionId": session_id,
             "assessmentType": assessment_type,
@@ -2429,7 +2503,11 @@ def run_eye_assessment(args, models, face_model):
             "targets": targets,
             **metrics,
         }
+<<<<<<< HEAD
         write_json_atomic(result_path, result)
+=======
+        attention_assessment.write_json_atomic(result_path, result)
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         update_status(
             final_status,
             result["message"],
@@ -2438,6 +2516,13 @@ def run_eye_assessment(args, models, face_model):
         )
 
 
+<<<<<<< HEAD
+=======
+def run_attention_assessment(args, models, face_model):
+    return run_eye_assessment(args, models, face_model)
+
+
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-dir", default="results/final/models")
@@ -2470,11 +2555,16 @@ def main():
     parser.add_argument("--selftest-frames", type=int, default=30)
     parser.add_argument(
         "--assessment-session-id",
+<<<<<<< HEAD
+=======
+        "--attention-session-id",
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         dest="assessment_session_id",
         default=None,
     )
     parser.add_argument(
         "--assessment-type",
+<<<<<<< HEAD
         choices=("saccadic", "smooth_pursuit", "blink_monitoring", "memory_tracking"),
         default="saccadic",
     )
@@ -2482,6 +2572,16 @@ def main():
     parser.add_argument("--assessment-cancel-file", default=None)
     parser.add_argument(
         "--assessment-auto-start",
+=======
+        choices=("attention", "saccadic", "smooth_pursuit", "blink_monitoring", "memory_tracking"),
+        default="attention",
+    )
+    parser.add_argument("--attention-results-dir", default=None)
+    parser.add_argument("--attention-cancel-file", default=None)
+    parser.add_argument(
+        "--assessment-auto-start",
+        "--attention-auto-start",
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         dest="assessment_auto_start",
         action="store_true",
         help="start the assessment immediately (for webcam smoke tests)",
@@ -2492,9 +2592,15 @@ def main():
     face_model = load_face_model()
 
     if args.assessment_session_id:
+<<<<<<< HEAD
         if not args.assessment_results_dir or not args.assessment_cancel_file:
             parser.error(
                 "--assessment-results-dir and --assessment-cancel-file are required "
+=======
+        if not args.attention_results_dir or not args.attention_cancel_file:
+            parser.error(
+                "--attention-results-dir and --attention-cancel-file are required "
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
                 "for an eye assessment session"
             )
         run_eye_assessment(args, models, face_model)

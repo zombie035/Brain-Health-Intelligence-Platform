@@ -1,0 +1,60 @@
+﻿$outFile = "combined_code.txt"
+$exts    = @(".py",".js",".ejs",".css",".html",".json",".md",".txt")
+$skipDirs = @("node_modules","venv",".venv","env","__pycache__",".git","profiles","GazeMap","eye_tracking_env","dist","build",".next",".cache",".vscode",".idea",".pytest_cache",".mypy_cache")
+
+# Fast folder walker — skips excluded dirs WITHOUT entering them
+function Get-FilesFast([string]$path) {
+    $stack = [System.Collections.Generic.Stack[string]]::new()
+    $stack.Push($path)
+
+    while ($stack.Count -gt 0) {
+        $dir = $stack.Pop()
+        try {
+            foreach ($sub in [System.IO.Directory]::EnumerateDirectories($dir)) {
+                $name = [System.IO.Path]::GetFileName($sub)
+                if ($skipDirs -notcontains $name) {
+                    $stack.Push($sub)
+                }
+            }
+            foreach ($file in [System.IO.Directory]::EnumerateFiles($dir)) {
+                $ext = [System.IO.Path]::GetExtension($file).ToLower()
+                if ($exts -contains $ext -and $file -notlike "*$outFile") {
+                    $file
+                }
+            }
+        } catch {
+            # skip inaccessible dirs
+        }
+    }
+}
+
+# Stream straight to file (no memory buildup)
+$sw = [System.IO.StreamWriter]::new((Join-Path (Get-Location) $outFile), $false, [System.Text.Encoding]::UTF8)
+$count = 0
+
+try {
+    $sw.WriteLine("COMBINED CODE — $(Get-Date)")
+    $sw.WriteLine("=" * 80)
+    $sw.WriteLine("")
+
+    foreach ($file in (Get-FilesFast (Get-Location).Path)) {
+        $count++
+        Write-Host "  [$count] $file"
+        $sw.WriteLine("=" * 80)
+        $sw.WriteLine("FILE: $file")
+        $sw.WriteLine("=" * 80)
+        try {
+            $sw.Write([System.IO.File]::ReadAllText($file))
+        } catch {
+            $sw.WriteLine("[ERROR reading file]")
+        }
+        $sw.WriteLine("")
+        $sw.WriteLine("")
+    }
+}
+finally {
+    $sw.Close()
+}
+
+Write-Host ""
+Write-Host "✅ Wrote $count files → $outFile ($([math]::Round((Get-Item $outFile).Length / 1KB, 1)) KB)"

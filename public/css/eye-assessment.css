@@ -539,6 +539,50 @@
     margin-top: 4px;
 }
 
+<<<<<<< HEAD
+=======
+#attentionTest:fullscreen {
+    box-sizing: border-box;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    overflow: auto;
+    flex-direction: column;
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+}
+
+#attentionTest:fullscreen .eye-gaze-stage {
+    flex: 1 1 auto;
+    min-height: 180px;
+    margin-top: 12px;
+}
+
+#attentionTest:fullscreen .eye-runner-heading h2 {
+    margin-top: 0;
+}
+
+#attentionTest:fullscreen .eye-runner-actions {
+    flex: 0 0 auto;
+    margin: 12px 0 4px;
+}
+
+#attentionTest:fullscreen .eye-status,
+#attentionTest:fullscreen .eye-progress-text {
+    flex: 0 0 auto;
+    margin-top: 5px;
+    margin-bottom: 4px;
+}
+
+#attentionTest:fullscreen .eye-progress-track {
+    flex: 0 0 12px;
+    margin-top: 4px;
+}
+
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 #blinkMonitoringTest:fullscreen {
     box-sizing: border-box;
     display: flex;

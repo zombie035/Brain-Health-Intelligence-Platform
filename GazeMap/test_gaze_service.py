@@ -209,6 +209,7 @@ class GazeServiceAssessmentTests(unittest.TestCase):
         self.assertEqual(ended["status"], "failed")
 
     def test_rejects_unsupported_assessment_types(self):
+<<<<<<< HEAD
         for assessment_type in ("attention", "unsupported_type"):
             with self.subTest(assessment_type=assessment_type):
                 with self.assertRaises(HTTPException) as error:
@@ -218,6 +219,15 @@ class GazeServiceAssessmentTests(unittest.TestCase):
                         )
                     )
                 self.assertEqual(error.exception.status_code, 400)
+=======
+        with self.assertRaises(HTTPException) as error:
+            gaze_service.start_assessment(
+                gaze_service.AssessmentStartRequest(
+                    assessment_type="unsupported_type"
+                )
+            )
+        self.assertEqual(error.exception.status_code, 400)
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
 
     def test_smooth_pursuit_legacy_start_does_not_launch_desktop_process(self):
         with self.assertRaises(HTTPException) as error:
@@ -265,8 +275,11 @@ class GazeServiceAssessmentTests(unittest.TestCase):
             command[command.index("--assessment-type") + 1],
             "saccadic",
         )
+<<<<<<< HEAD
         self.assertIn("--assessment-results-dir", command)
         self.assertIn("--assessment-cancel-file", command)
+=======
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         with self.assertRaises(HTTPException) as legacy_overlap:
             gaze_service.start_recording(
                 gaze_service.RecordingRequest(

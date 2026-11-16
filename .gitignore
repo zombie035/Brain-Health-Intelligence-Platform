@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Node
 node_modules/
 npm-debug.log*
@@ -39,3 +40,24 @@ combined_code.txt
 .DS_Store
 .vscode/
 .idea/
+=======
+# Python environments
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.pyc
+
+# Python logs
+**/*.log
+
+# Node dependencies
+node_modules/
+
+# Environment secrets
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914

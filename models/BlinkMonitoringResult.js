@@ -77,8 +77,11 @@ const blinkMonitoringResultSchema = new mongoose.Schema(
             validTrackingPct: { type: Number, default: null },
             totalFrames: { type: Number, default: null },
             validFrames: { type: Number, default: null },
+<<<<<<< HEAD
             trackedSeconds: { type: Number, default: null },
             sampleRateHz: { type: Number, default: null },
+=======
+>>>>>>> f79453bff5602c6cbe713327b5054c4db7d00914
         },
         sampleQuality: {
             earThreshold: { type: Number, default: null },
