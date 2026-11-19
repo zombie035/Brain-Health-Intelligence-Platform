@@ -1,77 +1,51 @@
 <%- include("partials/header", { title }) %>
 
 <section class="page-heading">
-    <span class="tag">HEALTH PROFILE · STEP 1 OF 3</span>
-    <h1>Start with your health profile</h1>
-    <p>Save these details before moving to the four eye assessments.</p>
+    <span class="tag">HEALTH QUESTIONNAIRE · STEP 1 OF 3</span>
+    <h1>Tell us about your health and wellbeing</h1>
+    <p>Answer one question at a time. Follow-up questions are selected locally based on your choices.</p>
 </section>
 
-<form action="/health" method="POST">
-    <div class="card">
-        <h2>About you</h2>
-        <label for="name">Full name</label>
-        <input id="name" type="text" name="name" maxlength="80" autocomplete="name" required>
+<form action="/health" method="POST" id="healthQuestionnaireForm">
+    <section class="card health-contact-card" aria-labelledby="contactHeading">
+        <h2 id="contactHeading">Session details</h2>
+        <p>Your name and email identify this assessment session. Health answers are stored as structured choices.</p>
+        <div class="health-contact-fields">
+            <label for="name">Full name</label>
+            <input id="name" type="text" name="name" maxlength="80" autocomplete="name" required>
 
-        <label for="email">Email address</label>
-        <input id="email" type="email" name="email" maxlength="120" autocomplete="email" required>
+            <label for="email">Email address</label>
+            <input id="email" type="email" name="email" maxlength="120" autocomplete="email" required>
+        </div>
+    </section>
 
-        <label for="age">Age</label>
-        <input id="age" type="number" name="age" min="18" max="120" required>
+    <section class="card health-question-card" aria-labelledby="healthQuestionTitle">
+        <div class="health-question-progress">
+            <span id="healthQuestionCount">Question 1</span>
+            <span id="healthProgressPercent">0% complete</span>
+        </div>
+        <progress id="healthQuestionProgress" value="0" max="100" aria-label="Questionnaire completion progress">0%</progress>
+        <div id="healthQuestionContent" class="health-question-content" aria-live="polite"></div>
+        <p id="healthQuestionError" class="health-question-error" role="alert" hidden></p>
 
-        <label for="language">Preferred assessment language</label>
-        <select id="language" name="language" required>
-            <option value="">Select language</option>
-            <option value="English">English</option>
-            <option value="Arabic">Arabic</option>
-            <option value="Tamil">Tamil</option>
-            <option value="Hindi">Hindi</option>
-            <option value="Other">Other</option>
-        </select>
+        <div class="health-question-actions">
+            <button type="button" class="health-secondary-button" id="healthPrevious" hidden>Previous</button>
+            <button type="button" class="btn" id="healthNext">Continue</button>
+            <button type="submit" class="btn" id="healthSubmit" hidden>
+                Save answers and continue to eye assessments
+            </button>
+        </div>
+    </section>
 
-        <label for="educationLevel">Education level</label>
-        <select id="educationLevel" name="educationLevel" required>
-            <option value="">Select education</option>
-            <option value="School">School</option>
-            <option value="Undergraduate">Undergraduate</option>
-            <option value="Postgraduate">Postgraduate</option>
-            <option value="Other">Other</option>
-        </select>
-    </div>
+    <input type="hidden" name="questionnaireResponses" id="questionnaireResponses">
 
-    <div class="card">
-        <h2>Sleep and lifestyle</h2>
-        <label for="sleepHours">Average sleep hours per day</label>
-        <input id="sleepHours" type="number" name="sleepHours" min="0" max="24" step="0.5" required>
-
-        <label for="exerciseMinutes">Daily physical activity (minutes)</label>
-        <input id="exerciseMinutes" type="number" name="exerciseMinutes" min="0" max="1440" step="1" required>
-
-        <label for="stressLevel">Current perceived stress level</label>
-        <select id="stressLevel" name="stressLevel" required>
-            <option value="">Select stress level</option>
-            <option value="1">1 - Very low</option>
-            <option value="2">2 - Low</option>
-            <option value="3">3 - Moderate</option>
-            <option value="4">4 - High</option>
-            <option value="5">5 - Very high</option>
-        </select>
-    </div>
-
-    <div class="card">
-        <h2>Family history</h2>
-        <p>Is there a known family history of dementia or cognitive impairment?</p>
-        <select id="familyHistory" name="familyHistory" required>
-            <option value="">Select an option</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-            <option value="unknown">I don't know</option>
-        </select>
-    </div>
-
-    <button type="submit" class="btn">Save Profile and Continue to Eye Assessment →</button>
     <p class="disclaimer">
-        Information is saved with this assessment session. It does not establish medical risk.
+        These self-reported answers are not a diagnosis. You can choose “Not sure” or “Prefer not to answer” where offered.
+        No health answers are sent to an AI provider unless you separately consent on the report page.
     </p>
 </form>
+
+<script id="healthQuestionnaireData" type="application/json"><%- questionnaireJson %></script>
+<script src="/js/health-questionnaire.js" defer></script>
 
 <%- include("partials/footer") %>

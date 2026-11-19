@@ -201,6 +201,222 @@ body {
     margin-bottom: 15px;
 }
 
+.health-contact-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 18px;
+}
+
+.health-contact-fields label {
+    margin-bottom: 7px;
+}
+
+.health-contact-fields input {
+    box-sizing: border-box;
+}
+
+.health-question-card {
+    max-width: 860px;
+    padding: clamp(20px, 4vw, 36px);
+}
+
+.health-question-progress {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.health-question-card progress {
+    display: block;
+    width: 100%;
+    height: 10px;
+    margin-bottom: 26px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 999px;
+    appearance: none;
+}
+
+.health-question-card progress::-webkit-progress-bar {
+    border-radius: 999px;
+    background: #e2e8f0;
+}
+
+.health-question-card progress::-webkit-progress-value {
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2563eb, #10b981);
+    transition: width 180ms ease;
+}
+
+.health-question-card progress::-moz-progress-bar {
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2563eb, #10b981);
+}
+
+.health-question-content {
+    min-height: 310px;
+}
+
+.health-question-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.health-question-fieldset legend {
+    width: 100%;
+    margin-bottom: 8px;
+    color: #0f172a;
+    font-size: clamp(21px, 3vw, 28px);
+    font-weight: 750;
+    line-height: 1.3;
+}
+
+.health-question-hint {
+    margin: 8px 0 15px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.health-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 11px;
+    margin-top: 20px;
+}
+
+.health-option {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 13px 15px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: #1e293b;
+    background: #fff;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1.4;
+    transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.health-option:hover {
+    border-color: #93c5fd;
+    background: #f8fbff;
+}
+
+.health-option.is-selected {
+    border-color: var(--primary);
+    background: #eff6ff;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.health-option input {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    accent-color: var(--primary);
+}
+
+.health-option input:disabled {
+    cursor: not-allowed;
+}
+
+.health-option:focus-within,
+.health-change-answer:focus-visible,
+.health-secondary-button:focus-visible {
+    outline: 3px solid #bfdbfe;
+    outline-offset: 2px;
+}
+
+.health-question-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.health-question-actions [hidden] {
+    display: none;
+}
+
+.health-secondary-button,
+.health-change-answer {
+    padding: 11px 16px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: #1e293b;
+    background: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.health-question-error {
+    margin: 12px 0 0;
+    color: #b91c1c;
+    font-weight: 700;
+}
+
+.health-answer-review {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.health-answer-review-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.health-answer-review-item h3 {
+    margin: 0;
+    font-size: 15px;
+}
+
+.health-answer-review-item p {
+    margin: 0;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.health-answer-review-item .health-change-answer {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+}
+
+.health-question-enter {
+    animation: health-question-enter 180ms ease-out;
+}
+
+@keyframes health-question-enter {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 label {
     display: block;
     margin: 15px 0 7px;
@@ -325,6 +541,27 @@ select:focus {
         grid-template-columns: 1fr;
     }
 
+    .health-contact-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .health-question-content {
+        min-height: 0;
+    }
+
+    .health-question-actions {
+        flex-direction: column-reverse;
+    }
+
+    .health-question-actions .btn,
+    .health-question-actions .health-secondary-button {
+        width: 100%;
+    }
+
+    .health-answer-review-item {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
     .navbar {
         padding: 15px 5%;
     }
@@ -335,6 +572,17 @@ select:focus {
 
     .page-heading h1 {
         font-size: 26px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .health-question-enter {
+        animation: none;
+    }
+
+    .health-option,
+    .health-question-card progress::-webkit-progress-value {
+        transition: none;
     }
 }
 

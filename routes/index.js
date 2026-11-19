@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const Assessment = require("../models/Assessment");
+const CalendarEvent = require("../models/CalendarEvent");
 const HealthProfile = require("../models/HealthProfile");
 const EyeAssessmentResult = require("../models/EyeAssessmentResult");
 const BlinkMonitoringResult = require("../models/BlinkMonitoringResult");
@@ -10,11 +11,14 @@ const {
     ASSESSMENT_STEPS,
     getAssessmentProgress,
 } = require("../services/assessmentWorkflow");
+const {
+    QUESTIONNAIRE,
+    displayFamilyHistory,
+    getLegacyProfileFields,
+    validateQuestionnaireResponses,
+} = require("../services/healthQuestionnaire");
 
 const router = express.Router();
-
-const LANGUAGES = ["English", "Arabic", "Tamil", "Hindi", "Other"];
-const EDUCATION_LEVELS = ["School", "Undergraduate", "Postgraduate", "Other"];
 
 router.get("/", (req, res) => {
     res.render("index", { title: "BrainGuard AI - Home" });
@@ -28,70 +32,39 @@ router.get("/health", (req, res) => {
     res.render("health", {
         title: "Health Profile - BrainGuard AI",
         profile: null,
+        questionnaireJson: JSON.stringify(QUESTIONNAIRE).replace(/</g, "\\u003c"),
     });
 });
 
 router.post("/health", async (req, res) => {
-    let assessment;
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+    const email = typeof req.body.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
 
+    if (!name || name.length > 80) {
+        return res.status(400).send("Enter a name of 1 to 80 characters.");
+    }
+    if (
+        email.length > 120
+        || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+        return res.status(400).send("Enter a valid email address.");
+    }
+
+    let responses;
     try {
-        const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
-        const email = typeof req.body.email === "string"
-            ? req.body.email.trim().toLowerCase()
-            : "";
-        const language = req.body.language;
-        const educationLevel = req.body.educationLevel;
-        const familyHistory = req.body.familyHistory;
-        const age = Number(req.body.age);
-        const sleepHours = Number(req.body.sleepHours);
-        const exerciseMinutes = Number(req.body.exerciseMinutes);
-        const stressLevel = Number(req.body.stressLevel);
+        responses = validateQuestionnaireResponses(req.body.questionnaireResponses);
+    } catch (error) {
+        return res.status(400).send(error.message);
+    }
 
-        if (!name || name.length > 80) {
-            return res.status(400).send("Enter a name of 1 to 80 characters.");
-        }
-        if (
-            email.length > 120
-            || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-        ) {
-            return res.status(400).send("Enter a valid email address.");
-        }
-        if (!Number.isInteger(age) || age < 18 || age > 120) {
-            return res.status(400).send("Age must be between 18 and 120.");
-        }
-        if (!LANGUAGES.includes(language)) {
-            return res.status(400).send("Select a supported preferred language.");
-        }
-        if (!EDUCATION_LEVELS.includes(educationLevel)) {
-            return res.status(400).send("Select a supported education level.");
-        }
-        if (!Number.isFinite(sleepHours) || sleepHours < 0 || sleepHours > 24) {
-            return res.status(400).send("Sleep duration must be between 0 and 24 hours.");
-        }
-        if (
-            !Number.isInteger(exerciseMinutes)
-            || exerciseMinutes < 0
-            || exerciseMinutes > 1440
-        ) {
-            return res.status(400).send("Physical activity must be between 0 and 1440 minutes.");
-        }
-        if (!Number.isInteger(stressLevel) || stressLevel < 1 || stressLevel > 5) {
-            return res.status(400).send("Stress level must be between 1 and 5.");
-        }
-        if (!["yes", "no", "unknown"].includes(familyHistory)) {
-            return res.status(400).send("Select a valid family history response.");
-        }
-
+    let assessment;
+    try {
         assessment = await Assessment.create({ name, email });
         await HealthProfile.create({
             assessmentId: assessment._id,
-            age,
-            language,
-            educationLevel,
-            sleepHours,
-            exerciseMinutes,
-            stressLevel,
-            familyHistory,
+            ...getLegacyProfileFields(responses),
         });
 
         res.redirect(`/eye-assessment/${assessment._id}`);
@@ -129,11 +102,19 @@ router.get("/dashboard/:id", async (req, res) => {
         const healthProfile = await HealthProfile.findOne({
             assessmentId: assessment._id,
         }).lean();
+        const nextCalendarEvent = await CalendarEvent.findOne({
+            ownerEmail: assessment.email,
+            eventType: "brain_guard_assessment",
+            status: "scheduled",
+            startAt: { $gte: new Date() },
+        }).sort({ startAt: 1 }).lean();
 
         res.render("dashboard", {
             title: "BrainGuard AI - Dashboard",
             assessment,
             healthProfile,
+            nextCalendarEvent,
+            familyHistoryLabel: displayFamilyHistory(healthProfile.familyHistory),
             completedCount: progress.completedTypes.size,
         });
     } catch (error) {

@@ -11,13 +11,20 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/theme.css?v=1">
     <% if (typeof pageStylesheet !== "undefined" && pageStylesheet) { %>
-        <link rel="stylesheet" href="/css/<%= pageStylesheet %>?v=eye-assessment-2">
+        <link rel="stylesheet" href="/css/<%= pageStylesheet %>?v=eye-assessment-4">
     <% } %>
     <script src="/js/theme.js" defer></script>
 </head>
 <body>
 
 <header class="navbar" id="siteNav">
+    <%
+        const calendarAssessment = typeof assessment !== "undefined" && assessment
+            ? assessment
+            : typeof currentAssessment !== "undefined" && currentAssessment
+                ? currentAssessment
+                : null;
+    %>
     <a href="/" class="logo">
         <span class="logo-icon">B</span>
         <span>BrainGuard AI</span>
@@ -30,6 +37,7 @@
     <nav id="siteMenu" aria-label="Main">
         <a href="/">Home</a>
         <a href="/health">Assessment</a>
+        <a href="<%= calendarAssessment ? `/calendar/${calendarAssessment._id}` : "/calendar" %>">Calendar</a>
     </nav>
 </header>
 

@@ -22,12 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const frameIntervalMs = 90;
     const pursuitCycles = 5;
     const pursuitAmplitudeFraction = 0.35;
-    const pendingRequests = new Map();
 
     let active = false;
     let stream = null;
-    let socket = null;
-    let requestCounter = 0;
     let sessionId = null;
     let samples = [];
     let currentStimulus = null;
@@ -43,6 +40,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let lastProgressValue = null;
     let captureCanvas = document.createElement("canvas");
     let captureContext = captureCanvas.getContext("2d");
+    const gazeSocket = window.GazeSocket.create(websocketUrl, {
+        onClose: error => {
+            if (active) interruptTest(error.message);
+        },
+    });
 
     function setProgress(value) {
         const progress = Math.max(0, Math.min(100, Number(value) || 0));
@@ -156,77 +158,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function requestSocket(type, payload = {}, expectedType) {
-        if (!socket || socket.readyState !== WebSocket.OPEN) {
-            return Promise.reject(new Error("GazeMap connection is not available."));
-        }
-
-        const requestId = String(++requestCounter);
-        return new Promise((resolve, reject) => {
-            const timeout = window.setTimeout(() => {
-                pendingRequests.delete(requestId);
-                reject(new Error("GazeMap did not respond in time."));
-            }, 20000);
-            pendingRequests.set(requestId, {
-                expectedType,
-                resolve,
-                reject,
-                timeout
-            });
-            try {
-                socket.send(JSON.stringify({ type, requestId, ...payload }));
-            } catch (error) {
-                window.clearTimeout(timeout);
-                pendingRequests.delete(requestId);
-                reject(error);
-            }
-        });
+        return gazeSocket.request(type, payload, expectedType);
     }
 
     function connectSocket() {
-        return new Promise((resolve, reject) => {
-            socket = new WebSocket(websocketUrl);
-            const timeout = window.setTimeout(() => {
-                reject(new Error("Timed out connecting to the GazeMap service."));
-                socket.close();
-            }, 12000);
-            socket.addEventListener("open", () => {
-                window.clearTimeout(timeout);
-                resolve();
-            }, { once: true });
-            socket.addEventListener("error", () => {
-                window.clearTimeout(timeout);
-                reject(new Error("Could not connect to the GazeMap service."));
-            }, { once: true });
-            socket.addEventListener("message", event => {
-                let message;
-                try {
-                    message = JSON.parse(event.data);
-                } catch {
-                    return;
-                }
-                const pending = pendingRequests.get(message.requestId);
-                if (!pending) return;
-                window.clearTimeout(pending.timeout);
-                pendingRequests.delete(message.requestId);
-                if (message.type === "error") {
-                    pending.reject(new Error(message.message || "GazeMap request failed."));
-                } else if (message.type !== pending.expectedType) {
-                    pending.reject(new Error("Unexpected response from GazeMap."));
-                } else {
-                    pending.resolve(message);
-                }
-            });
-            socket.addEventListener("close", () => {
-                window.clearTimeout(timeout);
-                const error = new Error("GazeMap connection was closed.");
-                pendingRequests.forEach(pending => {
-                    window.clearTimeout(pending.timeout);
-                    pending.reject(error);
-                });
-                pendingRequests.clear();
-                if (active) interruptTest(error.message);
-            });
-        });
+        return gazeSocket.connect();
     }
 
     function stopCamera() {
@@ -235,11 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
             window.cancelAnimationFrame(animationFrame);
             animationFrame = null;
         }
-        if (socket) {
-            const currentSocket = socket;
-            socket = null;
-            currentSocket.close();
-        }
+        gazeSocket.close();
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             stream = null;
@@ -258,14 +190,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function cancelServerSession() {
+    async function cancelServerSession(keepalive = false) {
         if (!sessionId) return;
         const cancellingSessionId = sessionId;
         sessionId = null;
         try {
             await requestJson(
                 `/eye-assessment/${encodeURIComponent(assessmentId)}/smooth-pursuit/browser/${encodeURIComponent(cancellingSessionId)}/cancel`,
-                { method: "POST" }
+                { method: "POST", keepalive }
             );
         } catch (error) {
             console.error("Could not cancel the smooth pursuit session:", error);
@@ -489,6 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
             }
         );
+        sessionId = null;
         setProgress(100);
         statusText.textContent = "Assessment saved. Opening your results...";
         await exitFullscreen();
@@ -523,18 +456,30 @@ document.addEventListener("DOMContentLoaded", () => {
             stageMessage.textContent = "Starting the browser camera...";
             statusText.textContent = "Requesting camera permission...";
 
-            const cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: "user"
-                },
-                audio: false
-            });
+            const permissionReminder = window.setTimeout(() => {
+                if (active) {
+                    statusText.textContent =
+                        "Still waiting for camera permission. Allow access in the browser prompt or site settings.";
+                }
+            }, 10000);
+            let cameraStream;
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: "user"
+                    },
+                    audio: false
+                });
+            } finally {
+                window.clearTimeout(permissionReminder);
+            }
             if (!active) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 return;
             }
+            statusText.textContent = "Camera permission granted. Starting camera preview...";
             stream = cameraStream;
             stream.getVideoTracks().forEach(track => {
                 track.addEventListener("ended", () => {
@@ -547,6 +492,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await video.play();
             if (!active) return;
             stage.classList.add("eye-camera-active");
+            statusText.textContent = "Camera ready. Starting assessment session...";
 
             const started = await requestJson(
                 `/eye-assessment/${encodeURIComponent(assessmentId)}/smooth-pursuit/browser/start`,
@@ -554,9 +500,10 @@ document.addEventListener("DOMContentLoaded", () => {
             );
             sessionId = started.sessionId;
             if (!active) {
-                await cancelServerSession();
+                await cancelServerSession(true);
                 return;
             }
+            statusText.textContent = "Assessment session ready. Connecting to GazeMap...";
             await initializeGazeMap();
             if (!active) return;
             statusText.textContent = "Calibrating. Follow each on-screen dot.";
@@ -621,6 +568,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     window.addEventListener("resize", resizeCanvas);
-    window.addEventListener("beforeunload", stopCamera);
+    window.addEventListener("pagehide", () => {
+        active = false;
+        stopCamera();
+        if (sessionId) void cancelServerSession(true);
+    });
     resizeCanvas();
 });

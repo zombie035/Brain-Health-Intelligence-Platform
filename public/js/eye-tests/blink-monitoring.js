@@ -24,17 +24,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const captureCanvas = document.createElement("canvas");
     const captureContext = captureCanvas.getContext("2d");
     const samples = [];
-    const pendingRequests = new Map();
     let stream = null;
-    let socket = null;
     let sessionId = null;
-    let requestSequence = 0;
     let testStartedAt = 0;
     let latestLeftEyeLandmarks = null;
     let latestRightEyeLandmarks = null;
     let sampleTimer = null;
     let active = false;
     let finishing = false;
+    let failureHandled = false;
+    const gazeSocket = window.GazeSocket.create(websocketUrl, {
+        onClose: error => {
+            if (active) void failAssessment(error);
+        },
+    });
 
     function setProgress(value) {
         const progress = Math.max(0, Math.min(100, Number(value) || 0));
@@ -81,82 +84,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return data;
     }
 
-    function rejectPendingRequests(message) {
-        for (const [requestId, pending] of pendingRequests) {
-            window.clearTimeout(pending.timeout);
-            pending.reject(new Error(message));
-            pendingRequests.delete(requestId);
-        }
-    }
-
     function connectSocket() {
-        return new Promise((resolve, reject) => {
-            if (!websocketUrl) {
-                reject(new Error("The GazeMap WebSocket URL is not configured."));
-                return;
-            }
-
-            socket = new WebSocket(websocketUrl);
-            const timeout = window.setTimeout(
-                () => reject(new Error("Timed out connecting to the GazeMap service.")),
-                8000
-            );
-            socket.addEventListener("open", () => {
-                window.clearTimeout(timeout);
-                resolve();
-            }, { once: true });
-            socket.addEventListener("error", () => {
-                window.clearTimeout(timeout);
-                reject(new Error("Could not connect to GazeMap. Check that the Python service is running."));
-            }, { once: true });
-            socket.addEventListener("message", event => {
-                let message;
-                try {
-                    message = JSON.parse(event.data);
-                } catch {
-                    rejectPendingRequests("GazeMap returned an unreadable response.");
-                    return;
-                }
-                const pending = pendingRequests.get(message.requestId);
-                if (!pending) return;
-                pendingRequests.delete(message.requestId);
-                window.clearTimeout(pending.timeout);
-                if (message.type === "error" || message.error) {
-                    pending.reject(new Error(message.message || message.error));
-                } else {
-                    pending.resolve(message);
-                }
-            });
-            socket.addEventListener("close", () => {
-                window.clearTimeout(timeout);
-                rejectPendingRequests("The connection to GazeMap was closed.");
-            });
-        });
+        return gazeSocket.connect(8000);
     }
 
     function sendSocketRequest(type, data = {}) {
-        if (!socket || socket.readyState !== WebSocket.OPEN) {
-            return Promise.reject(new Error("The connection to GazeMap is not open."));
-        }
-
-        const requestId = `blink-${++requestSequence}`;
-        return new Promise((resolve, reject) => {
-            const timeout = window.setTimeout(() => {
-                pendingRequests.delete(requestId);
-                reject(new Error("GazeMap did not respond to a camera frame in time."));
-            }, 10000);
-            pendingRequests.set(requestId, { resolve, reject, timeout });
-            socket.send(JSON.stringify({ type, requestId, ...data }));
-        });
+        return gazeSocket.request(type, data, type, 10000);
     }
 
     function closeSocket() {
-        if (!socket) return;
-        rejectPendingRequests("The browser camera session has ended.");
-        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-            socket.close();
-        }
-        socket = null;
+        gazeSocket.close();
     }
 
     function stopCamera() {
@@ -449,6 +386,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    async function cancelServerSession(keepalive = false) {
+        if (!sessionId) return;
+        const cancellingSessionId = sessionId;
+        sessionId = null;
+        await requestJson(
+            `/eye-assessment/${encodeURIComponent(assessmentId)}/blink-monitoring/browser/${encodeURIComponent(cancellingSessionId)}/cancel`,
+            { method: "POST", keepalive }
+        );
+    }
+
     async function completeAssessment() {
         if (finishing || !sessionId) return;
         finishing = true;
@@ -472,6 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }),
                 }
             );
+            sessionId = null;
             statusText.textContent = "Blink monitoring complete. Opening your results...";
             if (result.resultUrl) window.location.assign(result.resultUrl);
         } catch (error) {
@@ -481,13 +429,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function failAssessment(error) {
+        if (failureHandled) return;
+        failureHandled = true;
         cleanup();
         if (sessionId) {
             try {
-                await requestJson(
-                    `/eye-assessment/${encodeURIComponent(assessmentId)}/blink-monitoring/browser/${encodeURIComponent(sessionId)}/cancel`,
-                    { method: "POST" }
-                );
+                await cancelServerSession();
             } catch (cancelError) {
                 console.error("Could not mark the blink session incomplete:", cancelError);
             }
@@ -502,6 +449,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     startButton.addEventListener("click", async () => {
+        if (active) return;
+        failureHandled = false;
         active = true;
         startButton.disabled = true;
         setProgress(0);
@@ -526,14 +475,29 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 throw new Error("Camera access requires a secure browser context (HTTPS or localhost).");
             }
-            stream = await navigator.mediaDevices.getUserMedia({
-                audio: false,
-                video: {
-                    facingMode: "user",
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                },
-            });
+            const permissionReminder = window.setTimeout(() => {
+                if (active) {
+                    statusText.textContent =
+                        "Still waiting for camera permission. Allow access in the browser prompt or site settings.";
+                }
+            }, 10000);
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: {
+                        facingMode: "user",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                    },
+                });
+            } finally {
+                window.clearTimeout(permissionReminder);
+            }
+            if (!active) {
+                stopCamera();
+                return;
+            }
+            statusText.textContent = "Camera permission granted. Starting camera preview...";
             stream.getVideoTracks().forEach(track => {
                 track.addEventListener("ended", () => {
                     cameraStatus.textContent = "Camera Off";
@@ -546,6 +510,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!active) return;
             stage.classList.add("eye-test-active", "eye-camera-active");
             runner.classList.add("eye-test-active");
+            statusText.textContent = "Camera ready. Starting assessment session...";
             cameraStatus.textContent = "Camera Active";
             faceStatus.textContent = "Connecting to GazeMap...";
 
@@ -554,9 +519,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 { method: "POST" }
             );
             sessionId = session.sessionId;
+            if (!active) {
+                await cancelServerSession(true);
+                return;
+            }
             cancelButton.hidden = false;
             cancelButton.disabled = false;
 
+            statusText.textContent = "Assessment session ready. Connecting to GazeMap...";
             await connectSocket();
             if (!active) return;
             testStartedAt = performance.now();
@@ -571,7 +541,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cancelButton.addEventListener("click", async () => {
         if (!sessionId) return;
-        const cancellingSessionId = sessionId;
         cancelButton.disabled = true;
         cleanup();
         statusText.textContent = "Blink monitoring cancelled.";
@@ -579,14 +548,20 @@ document.addEventListener("DOMContentLoaded", () => {
         stage.classList.remove("eye-test-active", "eye-camera-active");
         cancelButton.hidden = true;
         startButton.disabled = false;
-        sessionId = null;
         try {
-            await requestJson(
-                `/eye-assessment/${encodeURIComponent(assessmentId)}/blink-monitoring/browser/${encodeURIComponent(cancellingSessionId)}/cancel`,
-                { method: "POST" }
-            );
+            await cancelServerSession();
         } catch (error) {
             statusText.textContent = `Unable to save cancellation: ${error.message}`;
+        }
+    });
+
+    window.addEventListener("pagehide", () => {
+        const shouldCancel = Boolean(sessionId);
+        cleanup();
+        if (shouldCancel) {
+            void cancelServerSession(true).catch(error => {
+                console.error("Could not cancel the blink session during page cleanup:", error);
+            });
         }
     });
 

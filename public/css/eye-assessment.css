@@ -539,47 +539,6 @@
     margin-top: 4px;
 }
 
-#attentionTest:fullscreen {
-    box-sizing: border-box;
-    display: flex;
-    width: 100vw;
-    height: 100vh;
-    max-height: 100vh;
-    margin: 0;
-    overflow: auto;
-    flex-direction: column;
-    border: 0;
-    border-radius: 0;
-    background: var(--white);
-}
-
-#attentionTest:fullscreen .eye-gaze-stage {
-    flex: 1 1 auto;
-    min-height: 180px;
-    margin-top: 12px;
-}
-
-#attentionTest:fullscreen .eye-runner-heading h2 {
-    margin-top: 0;
-}
-
-#attentionTest:fullscreen .eye-runner-actions {
-    flex: 0 0 auto;
-    margin: 12px 0 4px;
-}
-
-#attentionTest:fullscreen .eye-status,
-#attentionTest:fullscreen .eye-progress-text {
-    flex: 0 0 auto;
-    margin-top: 5px;
-    margin-bottom: 4px;
-}
-
-#attentionTest:fullscreen .eye-progress-track {
-    flex: 0 0 12px;
-    margin-top: 4px;
-}
-
 #blinkMonitoringTest:fullscreen {
     box-sizing: border-box;
     display: flex;
@@ -734,6 +693,26 @@
     margin: 10px 0 12px 22px;
 }
 
+.health-report-answers {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+}
+
+.health-report-answers > div {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.health-report-answers dt {
+    font-weight: 700;
+}
+
+.health-report-answers dd {
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
 .eye-explanation {
     padding: 10px 12px;
     border-left: 3px solid #f59e0b;
@@ -836,5 +815,299 @@
     .eye-result-row a {
         grid-column: 2;
         grid-row: 1 / span 2;
+    }
+}
+
+.eye-watch-card summary {
+    cursor: pointer;
+}
+
+.eye-watch-card summary h2 {
+    display: inline;
+    margin-left: 8px;
+}
+
+.eye-ai-chatbot,
+.eye-doctor-share {
+    margin-top: 24px;
+}
+
+.eye-ai-demo-button {
+    padding: 10px 15px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--slate);
+    background: var(--paper);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.eye-ai-demo-button:focus-visible {
+    outline: 3px solid #bfdbfe;
+    outline-offset: 2px;
+}
+
+.eye-ai-demo {
+    margin-top: 14px;
+    padding: 18px;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    background: #f0fdf4;
+}
+
+.eye-ai-demo-label {
+    color: #166534;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+}
+
+.eye-ai-demo h3 {
+    margin: 10px 0;
+}
+
+.eye-ai-demo p {
+    margin: 8px 0 0;
+    line-height: 1.5;
+}
+
+.eye-ai-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.eye-ai-title::before {
+    color: var(--primary);
+    content: "✦";
+    font-size: 0.8em;
+}
+
+.eye-ai-title::after {
+    color: #d29b36;
+    content: "✧";
+    font-size: 0.75em;
+    opacity: 0;
+    transform: scale(0.5) rotate(-35deg);
+}
+
+.eye-ai-chatbot.is-thinking .eye-ai-title::after {
+    animation: eye-ai-sparkle 1.15s ease-in-out infinite;
+}
+
+@keyframes eye-ai-sparkle {
+    0%, 100% {
+        opacity: 0.25;
+        transform: scale(0.65) rotate(-25deg);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.15) rotate(25deg);
+    }
+}
+
+.eye-ai-chatbot[aria-busy="true"] .eye-ai-title {
+    color: var(--primary-dark);
+}
+
+.eye-ai-privacy {
+    padding: 12px 14px;
+    border-left: 3px solid var(--primary);
+    color: #475569;
+    background: #f1f5f9;
+    line-height: 1.55;
+}
+
+.eye-ai-field {
+    display: block;
+    margin: 14px 0 6px;
+    font-weight: 700;
+}
+
+#eyeAiMessage,
+#doctorEmail {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 640px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #0f172a;
+    background: #fff;
+    font: inherit;
+}
+
+#eyeAiMessage {
+    resize: vertical;
+}
+
+.eye-ai-consent {
+    display: flex;
+    width: 100%;
+    max-width: 820px;
+    box-sizing: border-box;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px;
+    margin: 16px 0;
+    color: #334155;
+    line-height: 1.5;
+}
+
+.eye-ai-consent input {
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    margin: 4px 0 0;
+    padding: 0;
+}
+
+.eye-ai-consent span {
+    display: block;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.eye-ai-health-consent {
+    border-left: 3px solid #94a3b8;
+    padding-left: 12px;
+}
+
+.eye-ai-provider-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 8px 0;
+    padding: 6px 11px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    background: var(--cream);
+    font-size: 13px;
+}
+
+.eye-ai-analysis > * + * {
+    margin-top: 12px;
+}
+
+.eye-ai-analysis h3,
+.eye-ai-analysis h4 {
+    margin-bottom: 6px;
+}
+
+.eye-ai-analysis li + li {
+    margin-top: 7px;
+}
+
+.eye-ai-chatbot button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.eye-ai-status {
+    min-height: 1.4em;
+    color: #475569;
+}
+
+.eye-ai-analysis {
+    margin-top: 20px;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
+    overflow-wrap: anywhere;
+}
+
+.eye-ai-analysis h3,
+.eye-ai-analysis h4 {
+    color: #17324d;
+}
+
+.eye-ai-analysis ul {
+    padding-left: 22px;
+}
+
+.eye-ai-conversation {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.eye-ai-message {
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #fff;
+    overflow-wrap: anywhere;
+}
+
+.eye-ai-message-user {
+    background: #eff6ff;
+}
+
+.eye-ai-message p {
+    margin: 6px 0 0;
+    line-height: 1.55;
+    white-space: pre-wrap;
+}
+
+#eyeAiChatForm,
+#doctorShareForm {
+    display: grid;
+    width: 100%;
+    justify-items: start;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.eye-ai-chat-actions {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.eye-ai-chat-hint {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.eye-ai-chat-hint[hidden] {
+    display: none;
+}
+
+#doctorShareForm .eye-ai-consent {
+    max-width: 820px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .eye-ai-chatbot.is-thinking .eye-ai-title::after {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .eye-ai-analysis {
+        padding: 14px;
+    }
+
+    .eye-ai-consent {
+        font-size: 14px;
+    }
+
+    .eye-ai-chat-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .eye-ai-chat-actions .btn {
+        align-self: flex-start;
     }
 }

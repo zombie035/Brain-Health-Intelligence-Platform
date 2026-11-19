@@ -31,14 +31,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const retentionDurationMs = 5000;
     const recognitionTimeoutMs = 5000;
     const frameIntervalMs = 90;
-    const pendingRequests = new Map();
     const captureCanvas = document.createElement("canvas");
     let captureContext = captureCanvas.getContext("2d");
 
     let active = false;
     let stream = null;
-    let socket = null;
-    let requestCounter = 0;
     let sessionId = null;
     let samples = [];
     let trials = [];
@@ -56,6 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let pixelRatio = 1;
     let testStartedAt = 0;
     let completing = false;
+    const gazeSocket = window.GazeSocket.create(websocketUrl, {
+        onClose: error => {
+            if (active) interruptTest(error.message);
+        },
+    });
 
     function setProgress(value) {
         const progress = Math.max(0, Math.min(100, Number(value) || 0));
@@ -131,88 +133,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function requestSocket(type, payload = {}, expectedType) {
-        if (!socket || socket.readyState !== WebSocket.OPEN) {
-            return Promise.reject(new Error("GazeMap connection is not available."));
-        }
-        const requestId = String(++requestCounter);
-        return new Promise((resolve, reject) => {
-            const timeout = window.setTimeout(() => {
-                pendingRequests.delete(requestId);
-                reject(new Error("GazeMap did not respond in time."));
-            }, 20000);
-            pendingRequests.set(requestId, { expectedType, resolve, reject, timeout });
-            try {
-                socket.send(JSON.stringify({ type, requestId, ...payload }));
-            } catch (error) {
-                window.clearTimeout(timeout);
-                pendingRequests.delete(requestId);
-                reject(error);
-            }
-        });
-    }
-
-    function rejectPendingRequests(message) {
-        for (const [requestId, pending] of pendingRequests) {
-            window.clearTimeout(pending.timeout);
-            pending.reject(new Error(message));
-            pendingRequests.delete(requestId);
-        }
+        return gazeSocket.request(type, payload, expectedType);
     }
 
     function connectSocket() {
-        return new Promise((resolve, reject) => {
-            if (!websocketUrl) {
-                reject(new Error("The GazeMap WebSocket URL is not configured."));
-                return;
-            }
-            socket = new WebSocket(websocketUrl);
-            const timeout = window.setTimeout(() => {
-                reject(new Error("Timed out connecting to GazeMap."));
-                socket.close();
-            }, 12000);
-            socket.addEventListener("open", () => {
-                window.clearTimeout(timeout);
-                resolve();
-            }, { once: true });
-            socket.addEventListener("error", () => {
-                window.clearTimeout(timeout);
-                reject(new Error("Could not connect to GazeMap. Check that the Python service is running."));
-            }, { once: true });
-            socket.addEventListener("message", event => {
-                let message;
-                try {
-                    message = JSON.parse(event.data);
-                } catch {
-                    rejectPendingRequests("GazeMap returned an unreadable response.");
-                    return;
-                }
-                const pending = pendingRequests.get(message.requestId);
-                if (!pending) return;
-                window.clearTimeout(pending.timeout);
-                pendingRequests.delete(message.requestId);
-                if (message.type === "error") {
-                    pending.reject(new Error(message.message || "GazeMap request failed."));
-                } else if (message.type !== pending.expectedType) {
-                    pending.reject(new Error("Unexpected response from GazeMap."));
-                } else {
-                    pending.resolve(message);
-                }
-            });
-            socket.addEventListener("close", () => {
-                window.clearTimeout(timeout);
-                rejectPendingRequests("GazeMap connection was closed.");
-                if (active) interruptTest("GazeMap connection was closed. Restart the test.");
-            });
-        });
+        return gazeSocket.connect();
     }
 
     function stopCamera() {
         calibrationUI.hide();
-        if (socket) {
-            const currentSocket = socket;
-            socket = null;
-            currentSocket.close();
-        }
+        gazeSocket.close();
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             stream = null;
@@ -232,14 +162,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function cancelServerSession() {
+    async function cancelServerSession(keepalive = false) {
         if (!sessionId) return;
         const cancellingSessionId = sessionId;
         sessionId = null;
         try {
             await requestJson(
                 `/eye-assessment/${encodeURIComponent(assessmentId)}/memory-tracking/browser/${encodeURIComponent(cancellingSessionId)}/cancel`,
-                { method: "POST" }
+                { method: "POST", keepalive }
             );
         } catch (error) {
             console.error("Could not cancel the memory session:", error);
@@ -706,18 +636,30 @@ document.addEventListener("DOMContentLoaded", () => {
             stageMessage.textContent = "Starting the browser camera...";
             statusText.textContent = "Requesting camera permission...";
 
-            const cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: "user",
-                },
-                audio: false,
-            });
+            const permissionReminder = window.setTimeout(() => {
+                if (active) {
+                    statusText.textContent =
+                        "Still waiting for camera permission. Allow access in the browser prompt or site settings.";
+                }
+            }, 10000);
+            let cameraStream;
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: "user",
+                    },
+                    audio: false,
+                });
+            } finally {
+                window.clearTimeout(permissionReminder);
+            }
             if (!active) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 return;
             }
+            statusText.textContent = "Camera permission granted. Starting camera preview...";
             stream = cameraStream;
             stream.getVideoTracks().forEach(track => {
                 track.addEventListener("ended", () => {
@@ -728,6 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await video.play();
             ensureActive();
             stage.classList.add("eye-camera-active");
+            statusText.textContent = "Camera ready. Starting assessment session...";
             cameraStatus.textContent = "Browser camera is live.";
             faceStatus.textContent = "Connecting to GazeMap...";
 
@@ -737,6 +680,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
             sessionId = started.sessionId;
             ensureActive();
+            statusText.textContent = "Assessment session ready. Connecting to GazeMap...";
             await initializeGazeMap();
             ensureActive();
             statusText.textContent = "Calibration: look at each dot as it appears.";
@@ -765,7 +709,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 statusText.textContent =
                     `Unable to complete the test: ${stageMessage.textContent}`;
             }
-            if (sessionId) await cancelServerSession();
+            if (sessionId) await cancelServerSession(wasCancelled);
             await exitFullscreen();
         }
     }
@@ -802,5 +746,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("keydown", handleKeydown);
     window.addEventListener("resize", handleResize);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+    window.addEventListener("pagehide", () => {
+        active = false;
+        stopCamera();
+        if (sessionId) void cancelServerSession(true);
+    });
     resizeCanvas();
 });

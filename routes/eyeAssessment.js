@@ -6,15 +6,38 @@ const Assessment = require("../models/Assessment");
 const EyeAssessmentResult = require("../models/EyeAssessmentResult");
 const BlinkMonitoringResult = require("../models/BlinkMonitoringResult");
 const MemoryEyeTracking = require("../models/MemoryEyeTracking");
+const EyeAssessmentAiAnalysis = require("../models/EyeAssessmentAiAnalysis");
 const EyeTracking = require("../models/EyeTracking");
 const HealthProfile = require("../models/HealthProfile");
 const {
     ASSESSMENT_STEPS,
     getAssessmentProgress,
 } = require("../services/assessmentWorkflow");
+const {
+    generateAiResponse,
+    getConfiguredAiProvider,
+} = require("../services/eyeAssessmentAi");
+const createEyeAssessmentPdf = require("../services/eyeAssessmentPdf");
+const {
+    compareQuestionnaireResponses,
+    displayFamilyHistory,
+    getQuestionnaireAnswers,
+} = require("../services/healthQuestionnaire");
 
 const router = express.Router();
-const GAZE_API = process.env.GAZE_API_URL || "http://127.0.0.1:8001";
+const GAZE_API = (
+    process.env.GAZE_API_URL || "http://127.0.0.1:8001"
+).replace(/\/+$/, "");
+const defaultGazeWsUrl = new URL(GAZE_API);
+defaultGazeWsUrl.protocol = defaultGazeWsUrl.protocol === "https:"
+    ? "wss:"
+    : "ws:";
+defaultGazeWsUrl.username = "";
+defaultGazeWsUrl.password = "";
+defaultGazeWsUrl.pathname = "/ws/gaze";
+defaultGazeWsUrl.search = "";
+defaultGazeWsUrl.hash = "";
+const GAZE_WS = process.env.GAZE_WS_URL || defaultGazeWsUrl.toString();
 const assessmentTypeByPath = new Map([
     ["saccadic", "saccadic"],
     ["smooth-pursuit", "smooth_pursuit"],
@@ -1369,65 +1392,437 @@ async function cancelBrowserSmoothPursuitAssessment(req, res) {
     }
 }
 
+async function loadConsolidatedReportData(assessment) {
+    const progress = await getAssessmentProgress(assessment._id);
+    if (!progress.profileComplete) return { redirect: "/health" };
+    if (!progress.complete) {
+        return { redirect: `/eye-assessment/${assessment._id}` };
+    }
+
+    const [
+        healthProfile,
+        results,
+        blinkResult,
+        memoryResult,
+        heatmaps,
+        aiAnalysis,
+    ] =
+        await Promise.all([
+            HealthProfile.findOne({ assessmentId: assessment._id }).lean(),
+            EyeAssessmentResult.find({
+                assessment: assessment._id,
+                status: "completed",
+            }).sort({ endedAt: -1, createdAt: -1 }).lean(),
+            BlinkMonitoringResult.findOne({
+                assessment: assessment._id,
+                status: "completed",
+            }).sort({ endedAt: -1, createdAt: -1 }).lean(),
+            MemoryEyeTracking.findOne({
+                assessment: assessment._id,
+                status: "completed",
+            }).sort({ endedAt: -1, createdAt: -1 }).lean(),
+            EyeTracking.find({
+                assessment: assessment._id,
+                stimulus: { $ne: "browser-attention-test" },
+                heatmapFilename: { $ne: null },
+            }).sort({ createdAt: -1 }).limit(5).lean(),
+            EyeAssessmentAiAnalysis.findOne({ assessment: assessment._id }).lean(),
+        ]);
+
+    const resultsByType = new Map();
+    for (const result of results) {
+        if (!resultsByType.has(result.assessmentType)) {
+            resultsByType.set(result.assessmentType, result);
+        }
+    }
+    const reportSections = ASSESSMENT_STEPS.map((step, index) => {
+        const result = step.type === "blink_monitoring"
+            ? blinkResult
+            : step.type === "memory_tracking"
+                ? memoryResult
+                : resultsByType.get(step.type);
+        return result ? makeReportSection(step, result, index + 1) : null;
+    });
+
+    if (!healthProfile || reportSections.some(section => !section)) {
+        return {
+            error: "Assessment results are incomplete. Complete all four eye tests first.",
+            status: 409,
+        };
+    }
+
+    const previousAssessments = await Assessment.find({
+        email: assessment.email,
+        _id: { $ne: assessment._id },
+        createdAt: { $lt: assessment.createdAt },
+    })
+        .select("_id createdAt")
+        .sort({ createdAt: -1 })
+        .limit(25)
+        .lean();
+    const previousHealthProfiles = previousAssessments.length
+        ? await HealthProfile.find({
+            assessmentId: { $in: previousAssessments.map(item => item._id) },
+            questionnaireVersion: healthProfile.questionnaireVersion,
+            "responses.0": { $exists: true },
+        }).lean()
+        : [];
+    const profileByAssessment = new Map(previousHealthProfiles.map(profile => [
+        String(profile.assessmentId),
+        profile,
+    ]));
+    const previousHealthProfile = previousAssessments
+        .map(item => profileByAssessment.get(String(item._id)))
+        .find(Boolean) || null;
+    const questionnaireAnswers = getQuestionnaireAnswers(healthProfile.responses || []);
+    const previousQuestionnaireAnswers = getQuestionnaireAnswers(
+        previousHealthProfile?.responses || []
+    );
+
+    return {
+        healthProfile,
+        familyHistoryLabel: displayFamilyHistory(healthProfile.familyHistory),
+        questionnaireAnswers,
+        previousQuestionnaireAnswers,
+        previousQuestionnaireDate: previousHealthProfile?.createdAt || null,
+        questionnaireChanges: compareQuestionnaireResponses(
+            healthProfile.responses || [],
+            previousHealthProfile?.responses || []
+        ),
+        reportSections,
+        heatmaps,
+        aiAnalysis,
+        aiProvider: getConfiguredAiProvider(),
+    };
+}
+
+function respondIfReportUnavailable(res, reportData) {
+    if (reportData.redirect) {
+        res.redirect(reportData.redirect);
+        return true;
+    }
+    if (reportData.error) {
+        res.status(reportData.status).send(reportData.error);
+        return true;
+    }
+    return false;
+}
+
+async function loadPersonalBaseline(assessment) {
+    const priorAssessments = await Assessment.find({
+        email: assessment.email,
+        _id: { $ne: assessment._id },
+    })
+        .select("_id")
+        .sort({ createdAt: -1 })
+        .limit(25)
+        .lean();
+    const assessmentIds = priorAssessments.map(item => item._id);
+    if (!assessmentIds.length) {
+        return {
+            minimumSessionsForComparison: 2,
+            assessments: {},
+        };
+    }
+
+    const [eyeResults, blinkResults, memoryResults] = await Promise.all([
+        EyeAssessmentResult.find({
+            assessment: { $in: assessmentIds },
+            assessmentType: { $in: ["saccadic", "smooth_pursuit"] },
+            status: "completed",
+        }).sort({ endedAt: -1, createdAt: -1 }).lean(),
+        BlinkMonitoringResult.find({
+            assessment: { $in: assessmentIds },
+            status: "completed",
+        }).sort({ endedAt: -1, createdAt: -1 }).lean(),
+        MemoryEyeTracking.find({
+            assessment: { $in: assessmentIds },
+            status: "completed",
+        }).sort({ endedAt: -1, createdAt: -1 }).lean(),
+    ]);
+
+    function summarize(records) {
+        const latestByAssessment = new Map();
+        for (const record of records) {
+            const assessmentId = String(record.assessment);
+            if (!latestByAssessment.has(assessmentId)) {
+                latestByAssessment.set(assessmentId, record);
+            }
+        }
+
+        const sessions = [...latestByAssessment.values()];
+        const measurements = {};
+        const measurementNames = new Set(
+            sessions.flatMap(session => Object.keys(session.measurements || {}))
+        );
+        for (const name of measurementNames) {
+            const values = sessions
+                .map(session => session.measurements?.[name])
+                .filter(value => typeof value === "number" && Number.isFinite(value));
+            if (values.length < 2) continue;
+            measurements[name] = {
+                mean: Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2)),
+                sessionCount: values.length,
+            };
+        }
+
+        return {
+            priorCompletedSessions: sessions.length,
+            measurements,
+        };
+    }
+
+    return {
+        minimumSessionsForComparison: 2,
+        assessments: {
+            saccadic: summarize(
+                eyeResults.filter(result => result.assessmentType === "saccadic")
+            ),
+            smooth_pursuit: summarize(
+                eyeResults.filter(result => result.assessmentType === "smooth_pursuit")
+            ),
+            blink_monitoring: summarize(blinkResults),
+            memory_tracking: summarize(memoryResults),
+        },
+    };
+}
+
+function aiAnalysisHasBaseline(baseline) {
+    return Object.values(baseline.assessments).some(
+        assessmentData => Object.keys(assessmentData.measurements).length > 0
+    );
+}
+
+function publicAiAnalysis(analysis) {
+    return {
+        provider: analysis.provider,
+        summary: analysis.summary,
+        includesQuestionnaire: analysis.includesQuestionnaire === true,
+        baselineAvailable: analysis.baselineAvailable,
+        keyFindings: analysis.keyFindings,
+        baselineComparisons: analysis.baselineComparisons,
+        nextSteps: analysis.nextSteps,
+        limitations: analysis.limitations,
+        updatedAt: analysis.updatedAt,
+    };
+}
+
+function getAiReportContext(reportData, includeQuestionnaire = false) {
+    const context = {
+        assessments: reportData.reportSections.map(section => ({
+            type: section.type,
+            title: section.title,
+            durationSeconds: section.durationSeconds,
+            measurements: section.measurements,
+            calibration: section.calibration,
+            trackingQuality: section.quality,
+            qualityNotes: section.qualityNotes,
+            observations: section.observations,
+        })),
+    };
+    if (includeQuestionnaire) {
+        context.selfReportedQuestionnaire = {
+            currentAnswers: reportData.questionnaireAnswers,
+            previousAnswers: reportData.previousQuestionnaireAnswers,
+            changesFromPreviousSession: reportData.questionnaireChanges,
+        };
+    }
+    return context;
+}
+
+router.post("/eye-assessment/:id/ai-chat", async (req, res) => {
+    let provider;
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid assessment ID.",
+            });
+        }
+        if (req.body?.consent !== true) {
+            return res.status(400).json({
+                success: false,
+                message: "Consent is required before sending report data to an AI provider.",
+            });
+        }
+        const configuredProvider = getConfiguredAiProvider();
+        if (!configuredProvider || !configuredProvider.configured) {
+            return res.status(503).json({
+                success: false,
+                message: configuredProvider?.message
+                    || "Configure an AI provider and API key on the server before requesting analysis.",
+            });
+        }
+        provider = configuredProvider.id;
+        if (!["analysis", "chat"].includes(req.body?.mode)) {
+            return res.status(400).json({
+                success: false,
+                message: "Select a valid AI analysis mode.",
+            });
+        }
+        if (
+            typeof req.body?.message !== "string"
+            || !req.body.message.trim()
+            || req.body.message.length > 2000
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Enter a message of 1 to 2000 characters.",
+            });
+        }
+        const history = req.body.history === undefined ? [] : req.body.history;
+        if (
+            !Array.isArray(history)
+            || history.length > 8
+            || history.some(item =>
+                !item
+                || !["user", "assistant"].includes(item.role)
+                || typeof item.content !== "string"
+                || !item.content.trim()
+                || item.content.length > (item.role === "user" ? 2000 : 8000)
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "The conversation history is invalid or too long.",
+            });
+        }
+
+        const assessment = await Assessment.findById(req.params.id);
+        if (!assessment) {
+            return res.status(404).json({
+                success: false,
+                message: "Assessment not found.",
+            });
+        }
+        const reportData = await loadConsolidatedReportData(assessment);
+        if (reportData.redirect || reportData.error) {
+            return res.status(409).json({
+                success: false,
+                message: "Complete all four eye assessments before requesting an AI analysis.",
+            });
+        }
+
+        const baseline = await loadPersonalBaseline(assessment);
+        if (
+            req.body.mode === "chat"
+            && !reportData.aiAnalysis
+        ) {
+            return res.status(409).json({
+                success: false,
+                message: "Generate the initial report analysis before asking follow-up questions.",
+            });
+        }
+        if (
+            req.body.mode === "chat"
+            && reportData.aiAnalysis.includesQuestionnaire
+            && req.body.includeHealthProfile !== true
+        ) {
+            return res.status(409).json({
+                success: false,
+                message: "Regenerate the analysis without questionnaire answers before continuing without that data.",
+            });
+        }
+        const response = await generateAiResponse(provider, {
+            mode: req.body.mode,
+            reportContext: getAiReportContext(
+                reportData,
+                req.body.includeHealthProfile === true
+            ),
+            baseline,
+            message: req.body.message.trim(),
+            history: req.body.mode === "analysis" ? [] : history,
+        });
+
+        if (req.body.mode === "analysis") {
+            const savedAnalysis = await EyeAssessmentAiAnalysis.findOneAndUpdate(
+                { assessment: assessment._id },
+                {
+                    $set: {
+                        email: assessment.email,
+                        provider,
+                        includesQuestionnaire: req.body.includeHealthProfile === true,
+                        baselineAvailable: aiAnalysisHasBaseline(baseline),
+                        ...response.analysis,
+                    },
+                },
+                {
+                    new: true,
+                    upsert: true,
+                    runValidators: true,
+                    setDefaultsOnInsert: true,
+                }
+            ).lean();
+            return res.json({
+                success: true,
+                provider,
+                analysis: publicAiAnalysis(savedAnalysis),
+            });
+        }
+
+        res.json({ success: true, provider, answer: response.answer });
+    } catch (error) {
+        console.error("Eye assessment AI request failed:", {
+            provider,
+            code: error.code || "internal_error",
+            providerStatus: error.providerStatus,
+            providerCode: error.providerCode,
+            providerMessage: error.providerMessage,
+        });
+        res.status(error.status || 500).json({
+            success: false,
+            message: error.message || "Unable to generate an AI response.",
+        });
+    }
+});
+
+router.get("/eye-assessment/:id/report/download", async (req, res) => {
+    try {
+        if (!validateAssessmentId(req.params.id, res)) return;
+        const assessment = await loadAssessment(req.params.id, res);
+        if (!assessment) return;
+
+        const reportData = await loadConsolidatedReportData(assessment);
+        if (respondIfReportUnavailable(res, reportData)) return;
+
+        const pdf = createEyeAssessmentPdf({
+            assessment,
+            ...reportData,
+        });
+        pdf.on("error", error => {
+            console.error("Consolidated eye assessment PDF generation error:", error);
+            if (res.headersSent) {
+                res.destroy(error);
+            } else {
+                res.status(500).send("Unable to generate the consolidated PDF report.");
+            }
+        });
+        res.attachment(`brainguard-eye-assessment-${assessment._id}.pdf`);
+        pdf.pipe(res);
+        pdf.end();
+    } catch (error) {
+        console.error("Consolidated eye assessment PDF error:", error);
+        if (!res.headersSent) {
+            res.status(500).send("Unable to generate the consolidated PDF report.");
+        } else {
+            res.destroy(error);
+        }
+    }
+});
+
 router.get("/eye-assessment/:id/report", async (req, res) => {
     try {
         if (!validateAssessmentId(req.params.id, res)) return;
         const assessment = await loadAssessment(req.params.id, res);
         if (!assessment) return;
 
-        const progress = await getAssessmentProgress(assessment._id);
-        if (!progress.profileComplete) return res.redirect("/health");
-        if (!progress.complete) {
-            return res.redirect(`/eye-assessment/${assessment._id}`);
-        }
-
-        const [healthProfile, results, blinkResult, memoryResult, heatmaps] =
-            await Promise.all([
-                HealthProfile.findOne({ assessmentId: assessment._id }).lean(),
-                EyeAssessmentResult.find({
-                    assessment: assessment._id,
-                    status: "completed",
-                }).sort({ endedAt: -1, createdAt: -1 }).lean(),
-                BlinkMonitoringResult.findOne({
-                    assessment: assessment._id,
-                    status: "completed",
-                }).sort({ endedAt: -1, createdAt: -1 }).lean(),
-                MemoryEyeTracking.findOne({
-                    assessment: assessment._id,
-                    status: "completed",
-                }).sort({ endedAt: -1, createdAt: -1 }).lean(),
-                EyeTracking.find({
-                    assessment: assessment._id,
-                    stimulus: { $ne: "browser-attention-test" },
-                    heatmapFilename: { $ne: null },
-                }).sort({ createdAt: -1 }).limit(5).lean(),
-            ]);
-
-        const resultsByType = new Map();
-        for (const result of results) {
-            if (!resultsByType.has(result.assessmentType)) {
-                resultsByType.set(result.assessmentType, result);
-            }
-        }
-        const reportSections = ASSESSMENT_STEPS.map((step, index) => {
-            const result = step.type === "blink_monitoring"
-                ? blinkResult
-                : step.type === "memory_tracking"
-                    ? memoryResult
-                    : resultsByType.get(step.type);
-            return result ? makeReportSection(step, result, index + 1) : null;
-        });
-
-        if (reportSections.some(section => !section)) {
-            return res.status(409).send("Assessment results are incomplete. Complete the remaining eye tests first.");
-        }
+        const reportData = await loadConsolidatedReportData(assessment);
+        if (respondIfReportUnavailable(res, reportData)) return;
 
         res.render("eye-assessment-report", {
             title: "Consolidated Eye Assessment Report - BrainGuard AI",
             assessment,
-            healthProfile,
-            reportSections,
-            heatmaps,
+            ...reportData,
             pageStylesheet: "eye-assessment.css",
         });
     } catch (error) {
@@ -1478,7 +1873,7 @@ router.get("/eye-assessment/:id/saccadic", async (req, res) => {
         res.render("eye-saccadic", {
             title: "Saccadic Eye Movement Test - BrainGuard AI",
             assessment,
-            gazeWsUrl: process.env.GAZE_WS_URL || "ws://127.0.0.1:8001/ws/gaze",
+            gazeWsUrl: GAZE_WS,
             pageStylesheet: "eye-assessment.css",
         });
     } catch (error) {
@@ -1497,7 +1892,7 @@ router.get("/eye-assessment/:id/smooth-pursuit", async (req, res) => {
         res.render("eye-smooth-pursuit", {
             title: "Smooth Pursuit Test - BrainGuard AI",
             assessment,
-            gazeWsUrl: process.env.GAZE_WS_URL || "ws://127.0.0.1:8001/ws/gaze",
+            gazeWsUrl: GAZE_WS,
             pageStylesheet: "eye-assessment.css",
         });
     } catch (error) {
@@ -1516,7 +1911,7 @@ router.get("/eye-assessment/:id/blink-monitoring", async (req, res) => {
         res.render("eye-blink-monitoring", {
             title: "Blink & Fatigue Monitoring - BrainGuard AI",
             assessment,
-            gazeWsUrl: process.env.GAZE_WS_URL || "ws://127.0.0.1:8001/ws/gaze",
+            gazeWsUrl: GAZE_WS,
             pageStylesheet: "eye-assessment.css",
         });
     } catch (error) {
@@ -1535,7 +1930,7 @@ router.get("/eye-assessment/:id/memory-tracking", async (req, res) => {
         res.render("eye-memory-tracking", {
             title: "Memory Eye Tracking - BrainGuard AI",
             assessment,
-            gazeWsUrl: process.env.GAZE_WS_URL || "ws://127.0.0.1:8001/ws/gaze",
+            gazeWsUrl: GAZE_WS,
             pageStylesheet: "eye-assessment.css",
         });
     } catch (error) {

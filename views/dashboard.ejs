@@ -16,24 +16,41 @@
     </article>
     <article class="stat-card">
         <p>Sleep duration</p>
-        <h2><%= healthProfile.sleepHours %> hrs</h2>
-        <span>Self-reported daily average</span>
+        <h2><%= healthProfile.sleepDuration || (healthProfile.sleepHours != null ? `${healthProfile.sleepHours} hrs` : "Not recorded") %></h2>
+        <span>Self-reported range</span>
     </article>
     <article class="stat-card">
         <p>Physical activity</p>
-        <h2><%= healthProfile.exerciseMinutes %> min</h2>
-        <span>Self-reported daily average</span>
+        <h2><%= healthProfile.activityLevel || (healthProfile.exerciseMinutes != null ? `${healthProfile.exerciseMinutes} min` : "Not recorded") %></h2>
+        <span>Self-reported level</span>
     </article>
 </div>
 
 <section class="card">
+    <h2>Next scheduled BrainGuard assessment</h2>
+    <% if (nextCalendarEvent) { %>
+        <p><strong><%= nextCalendarEvent.title %></strong></p>
+        <p><%= new Date(nextCalendarEvent.startAt).toLocaleString(undefined, {
+            dateStyle: "medium",
+            timeStyle: "short",
+            timeZone: nextCalendarEvent.timeZone,
+        }) %></p>
+        <a class="btn" href="/calendar/<%= assessment._id %>">Manage calendar</a>
+        <a class="eye-back-link" href="/calendar/<%= assessment._id %>?edit=<%= nextCalendarEvent._id %>#calendarEditor">Reschedule</a>
+    <% } else { %>
+        <p>No future assessment is scheduled.</p>
+        <a class="btn" href="/calendar/<%= assessment._id %>?new=brain_guard_assessment">Schedule an assessment</a>
+    <% } %>
+</section>
+
+<section class="card">
     <h2>Health profile</h2>
     <div class="profile-grid">
-        <p><strong>Age:</strong> <%= healthProfile.age %></p>
+        <p><strong>Age range:</strong> <%= healthProfile.ageRange || healthProfile.age || "Not recorded" %></p>
         <p><strong>Preferred language:</strong> <%= healthProfile.language %></p>
         <p><strong>Education:</strong> <%= healthProfile.educationLevel %></p>
-        <p><strong>Stress level:</strong> <%= healthProfile.stressLevel %> / 5</p>
-        <p><strong>Family history:</strong> <%= healthProfile.familyHistory %></p>
+        <p><strong>Stress frequency:</strong> <%= healthProfile.stressFrequency || (healthProfile.stressLevel != null ? `${healthProfile.stressLevel} / 5` : "Not recorded") %></p>
+        <p><strong>Family history:</strong> <%= familyHistoryLabel %></p>
     </div>
 </section>
 

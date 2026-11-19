@@ -1,0 +1,131 @@
+<%- include("partials/header", { title, pageStylesheet }) %>
+
+<section class="page-heading calendar-heading">
+    <span class="tag">HEALTH CALENDAR</span>
+    <h1>Plan your next steps</h1>
+    <p>Keep BrainGuard AI assessments, check-ups, and follow-up reminders together.</p>
+</section>
+
+<div class="calendar-prototype-warning" role="note">
+    <strong>Prototype privacy notice:</strong> BrainGuard AI does not have user accounts or authentication.
+    This email-associated calendar is not private or suitable for confidential medical details. Anyone with
+    the assessment email or calendar link may be able to view or change events. Use non-sensitive titles and notes.
+    Events are saved in the app only; no provider is contacted and no external reminders are sent.
+</div>
+
+<% if (!assessment) { %>
+    <section class="card calendar-lookup">
+        <h2>Open your calendar</h2>
+        <% if (errorMessage) { %><p class="calendar-error" role="alert"><%= errorMessage %></p><% } %>
+        <form action="/calendar/open" method="post">
+            <label for="calendarEmail">Email used for an assessment</label>
+            <input id="calendarEmail" name="email" type="email" maxlength="120" autocomplete="email" required>
+            <button class="btn" type="submit">Open calendar</button>
+        </form>
+        <p>For this prototype, the email is used only to find the most recent assessment record. It is not a sign-in or identity check.</p>
+    </section>
+<% } else { %>
+    <section class="card calendar-owner">
+        <h2>Your event calendar</h2>
+        <p>Events are grouped with the assessment email on file. This is a prototype association, not secure account access.</p>
+    </section>
+
+    <% if (errorMessage) { %><p class="calendar-error" role="alert"><%= errorMessage %></p><% } %>
+
+    <section class="card calendar-form-card" id="calendarEditor">
+        <h2><%= editingEvent ? "Edit event" : "Add an event" %></h2>
+        <form
+            id="calendarEventForm"
+            action="<%= editingEvent ? `/calendar/${assessment._id}/events/${editingEvent.id}` : `/calendar/${assessment._id}/events` %>"
+            method="post"
+        >
+            <input id="calendarTimeZone" name="timeZone" type="hidden">
+            <input id="calendarOccurrences" name="occurrences" type="hidden">
+            <input id="calendarStartUtc" name="startAtUtc" type="hidden">
+            <input id="calendarEndUtc" name="endAtUtc" type="hidden">
+            <div class="calendar-form-grid">
+                <div>
+                    <label for="calendarTitle">Title</label>
+                    <input id="calendarTitle" name="title" type="text" maxlength="120" value="<%= editingEvent ? editingEvent.title : "" %>" required>
+                </div>
+                <div>
+                    <label for="calendarEventType">Event type</label>
+                    <select id="calendarEventType" name="eventType" required>
+                        <% Object.entries(eventTypes).forEach(([value, label]) => { %>
+                            <option value="<%= value %>" <%= (editingEvent ? editingEvent.eventType : prefillType) === value ? "selected" : "" %>><%= label %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div>
+                    <label for="calendarStart">Start date and time</label>
+                    <input id="calendarStart" type="datetime-local" required>
+                </div>
+                <div>
+                    <label for="calendarEnd">End date and time</label>
+                    <input id="calendarEnd" type="datetime-local" required>
+                </div>
+            </div>
+            <% if (!editingEvent) { %>
+                <fieldset class="calendar-repeat">
+                    <legend>Repeat this event (optional)</legend>
+                    <div class="calendar-repeat-fields">
+                        <div>
+                            <label for="calendarRepeatDays">Repeat every (days)</label>
+                            <input id="calendarRepeatDays" name="repeatEveryDays" type="number" min="1" max="<%= maxIntervalDays %>" inputmode="numeric">
+                        </div>
+                        <div>
+                            <label for="calendarRepeatCount">Number of occurrences</label>
+                            <input id="calendarRepeatCount" name="repeatCount" type="number" min="2" max="<%= maxSeriesCount %>" value="2" inputmode="numeric" disabled>
+                        </div>
+                    </div>
+                    <p>Leave the interval blank for a one-time event. Repeating events are limited to <%= maxSeriesCount %> occurrences; each occurrence can be edited or cancelled separately.</p>
+                </fieldset>
+            <% } else { %>
+                <p class="calendar-edit-note">This updates only this occurrence. Other events in the same repeat schedule will not change.</p>
+            <% } %>
+            <div>
+                <label for="calendarNotes">Notes <span>(optional; avoid sensitive medical details)</span></label>
+                <textarea id="calendarNotes" name="notes" rows="3" maxlength="2000"><%= editingEvent ? editingEvent.notes : "" %></textarea>
+            </div>
+            <div class="calendar-form-actions">
+                <button class="btn" type="submit"><%= editingEvent ? "Save changes" : "Add to calendar" %></button>
+                <% if (editingEvent) { %>
+                    <a class="calendar-secondary-link" href="/calendar/<%= assessment._id %>">Stop editing</a>
+                <% } %>
+            </div>
+            <p class="calendar-timezone-note" id="calendarTimeZoneNote" aria-live="polite"></p>
+        </form>
+    </section>
+
+    <section class="calendar-section" aria-labelledby="calendarEventsHeading">
+        <div class="calendar-toolbar">
+            <div>
+                <span class="tag">SCHEDULE</span>
+                <h2 id="calendarEventsHeading">Your events</h2>
+            </div>
+            <div class="calendar-navigation">
+                <button class="calendar-icon-button" id="calendarPrevious" type="button" aria-label="Previous period">&larr;</button>
+                <button class="calendar-icon-button" id="calendarToday" type="button">Today</button>
+                <button class="calendar-icon-button" id="calendarNext" type="button" aria-label="Next period">&rarr;</button>
+                <span id="calendarHeading" aria-live="polite"></span>
+            </div>
+        </div>
+
+        <div class="calendar-view-switch" role="group" aria-label="Calendar view">
+            <button type="button" data-calendar-view="month" aria-pressed="true">Month</button>
+            <button type="button" data-calendar-view="week" aria-pressed="false">Week</button>
+            <button type="button" data-calendar-view="upcoming" aria-pressed="false">Upcoming</button>
+        </div>
+
+        <p class="calendar-reminder" id="calendarReminder" role="status" aria-live="polite" hidden></p>
+        <div class="calendar-month-grid" id="calendarGrid" aria-label="Calendar events"></div>
+        <div class="calendar-upcoming-list" id="calendarUpcoming"></div>
+        <p class="calendar-empty" id="calendarEmpty" hidden>No events yet. Add an assessment, appointment, or reminder above.</p>
+    </section>
+<% } %>
+
+<script id="calendar-event-data" type="application/json"><%- calendarJson %></script>
+<script id="calendar-edit-data" type="application/json"><%- JSON.stringify(editingEvent).replace(/</g, "\\u003c") %></script>
+<script src="/js/calendar.js" defer></script>
+
+<%- include("partials/footer") %>

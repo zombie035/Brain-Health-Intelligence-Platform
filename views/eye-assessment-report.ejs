@@ -4,20 +4,155 @@
     <span class="tag">CONSOLIDATED EYE ASSESSMENT REPORT</span>
     <h1>Assessment report for <%= assessment.name %></h1>
     <p>This report combines the completed measurements recorded for this assessment session.</p>
+    <a class="btn" href="/eye-assessment/<%= assessment._id %>/report/download">Download PDF report</a>
 </section>
 
 <section class="card">
     <h2>Session summary</h2>
     <p>Four of four assessments have completed and their results are associated with this assessment session.</p>
     <div class="profile-grid">
-        <p><strong>Age:</strong> <%= healthProfile.age %></p>
+        <p><strong>Age range:</strong> <%= healthProfile.ageRange || healthProfile.age || "Not recorded" %></p>
         <p><strong>Preferred language:</strong> <%= healthProfile.language %></p>
         <p><strong>Education:</strong> <%= healthProfile.educationLevel %></p>
-        <p><strong>Average sleep:</strong> <%= healthProfile.sleepHours %> hours/day</p>
-        <p><strong>Physical activity:</strong> <%= healthProfile.exerciseMinutes %> minutes/day</p>
-        <p><strong>Self-reported stress:</strong> <%= healthProfile.stressLevel %> / 5</p>
-        <p><strong>Family history:</strong> <%= healthProfile.familyHistory %></p>
+        <p><strong>Sleep duration:</strong> <%= healthProfile.sleepDuration || (healthProfile.sleepHours != null ? `${healthProfile.sleepHours} hours/day` : "Not recorded") %></p>
+        <p><strong>Physical activity:</strong> <%= healthProfile.activityLevel || (healthProfile.exerciseMinutes != null ? `${healthProfile.exerciseMinutes} minutes/day` : "Not recorded") %></p>
+        <p><strong>Stress frequency:</strong> <%= healthProfile.stressFrequency || (healthProfile.stressLevel != null ? `${healthProfile.stressLevel} / 5` : "Not recorded") %></p>
+        <p><strong>Family history:</strong> <%= familyHistoryLabel %></p>
     </div>
+</section>
+
+<section class="card">
+    <h2>Self-reported questionnaire answers</h2>
+    <% if (questionnaireAnswers.length) { %>
+        <dl class="health-report-answers">
+            <% questionnaireAnswers.forEach(item => { %>
+                <div>
+                    <dt><%= item.question %></dt>
+                    <dd><%= item.answers.join(", ") %></dd>
+                </div>
+            <% }); %>
+        </dl>
+        <% if (previousQuestionnaireAnswers.length) { %>
+            <h3>Compared with the previous questionnaire session</h3>
+            <p>
+                Previous session: <%= previousQuestionnaireDate ? new Date(previousQuestionnaireDate).toLocaleDateString("en-IN") : "date unavailable" %>.
+                Differences describe selected answers only; they do not indicate clinical improvement or decline.
+            </p>
+            <% if (questionnaireChanges.length) { %>
+                <ul class="eye-quality-notes">
+                    <% questionnaireChanges.forEach(change => { %>
+                        <li><strong><%= change.question %>:</strong>
+                            previous: <%= change.previous.join(", ") %>;
+                            current: <%= change.current.join(", ") %>
+                        </li>
+                    <% }); %>
+                </ul>
+            <% } else { %>
+                <p>No differences were found in answers shared by both sessions.</p>
+            <% } %>
+        <% } else { %>
+            <p>No earlier structured questionnaire responses are available for comparison.</p>
+        <% } %>
+    <% } else { %>
+        <p>This session does not contain structured questionnaire responses.</p>
+    <% } %>
+</section>
+
+<section
+    class="card eye-ai-chatbot"
+    id="eyeReportChatbot"
+    data-assessment-id="<%= assessment._id %>"
+    data-ai-url="/eye-assessment/<%= assessment._id %>/ai-chat"
+    data-download-url="/eye-assessment/<%= assessment._id %>/report/download"
+    data-ai-provider="<%= aiProvider && aiProvider.configured ? aiProvider.id : '' %>"
+    data-ai-provider-label="<%= aiProvider && aiProvider.configured ? aiProvider.label : '' %>"
+>
+    <h2 class="eye-ai-title" id="eyeAiTitle">AI Report Assistant</h2>
+    <p>Get a plain-language explanation of the recorded measurements, tracking quality, and any supported personal-baseline comparisons.</p>
+    <p class="eye-ai-privacy">
+        The first consent checkbox covers de-identified eye measurements, available eye-measurement baselines, and your chat messages.
+        The separate optional checkbox includes your structured health answers and any available prior-session comparison.
+        Your name and email are not included with assessment data; camera frames and raw gaze samples are never sent. Provider keys remain on the server.
+        Avoid including identifying details in your questions. AI explanations are informational and are not medical advice.
+    </p>
+
+    <% if (aiProvider && aiProvider.configured) { %>
+        <p class="eye-ai-provider-note">Assistant powered by <strong><%= aiProvider.label %></strong></p>
+    <% } else { %>
+        <p class="eye-ai-status"><%= aiProvider && aiProvider.message ? aiProvider.message : "Configure GEMINI_API_KEY, OPENAI_API_KEY, or DEEPSEEK_API_KEY on the server to enable AI analysis." %></p>
+    <% } %>
+
+    <button class="eye-ai-demo-button" id="eyeAiDemo" type="button">
+        Show sample preview (10 seconds)
+    </button>
+    <p class="eye-ai-status" id="eyeAiDemoStatus" role="status" aria-live="polite">
+        Demo only: this preview does not use or interpret your assessment data.
+    </p>
+    <div class="eye-ai-demo" id="eyeAiDemoPreview" hidden aria-live="polite"></div>
+
+    <label class="eye-ai-consent">
+        <input id="eyeAiConsent" type="checkbox">
+        <span>I consent to sending the de-identified eye-assessment measurements, any available eye-measurement baseline, and my messages to the configured AI provider for explanation.</span>
+    </label>
+    <label class="eye-ai-consent eye-ai-health-consent">
+        <input id="eyeAiHealthConsent" type="checkbox">
+        <span>Optional: I separately consent to sending my selected health-questionnaire answers and any available previous-session answer comparison for context. My name and email are not included.</span>
+    </label>
+    <button class="btn" id="eyeAiAnalyze" type="button" <%= aiProvider && aiProvider.configured ? "" : "disabled" %>>
+        <%= aiAnalysis ? "Regenerate AI interpretation" : "Analyze my report" %>
+    </button>
+    <p class="eye-ai-status" id="eyeAiStatus" role="status" aria-live="polite"></p>
+
+    <div class="eye-ai-analysis" id="eyeAiAnalysis">
+        <% if (aiAnalysis) { %>
+            <h3>AI-generated interpretation</h3>
+            <p><%= aiAnalysis.summary %></p>
+            <% if (!aiAnalysis.baselineAvailable) { %>
+                <p>No eye-measurement baseline could be established; at least two prior completed sessions per measurement are required.</p>
+            <% } %>
+            <% if (aiAnalysis.keyFindings.length) { %>
+                <h4>Key findings</h4>
+                <ul>
+                    <% aiAnalysis.keyFindings.forEach(finding => { %>
+                        <li><strong><%= finding.title %>:</strong> <%= finding.explanation %> <%= finding.evidence %></li>
+                    <% }); %>
+                </ul>
+            <% } %>
+            <% if (aiAnalysis.baselineComparisons.length) { %>
+                <h4>Personal baseline</h4>
+                <ul>
+                    <% aiAnalysis.baselineComparisons.forEach(comparison => { %>
+                        <li><strong><%= comparison.assessment %> · <%= comparison.measurement %>:</strong>
+                            current <%= comparison.currentValue %>, personal mean <%= comparison.baselineMean %>
+                            across <%= comparison.sessions %> sessions. <%= comparison.explanation %>
+                        </li>
+                    <% }); %>
+                </ul>
+            <% } %>
+            <% if (aiAnalysis.nextSteps.length) { %>
+                <h4>Suggested next steps</h4>
+                <ul><% aiAnalysis.nextSteps.forEach(item => { %><li><%= item %></li><% }); %></ul>
+            <% } %>
+            <h4>Limitations</h4>
+            <p><%= aiAnalysis.limitations %></p>
+            <% if (aiAnalysis.includesQuestionnaire) { %>
+                <p>The interpretation also used the self-reported questionnaire answers you consented to share.</p>
+            <% } %>
+            <p class="disclaimer">This AI-generated interpretation is informational and is not a medical diagnosis or professional medical advice.</p>
+        <% } else { %>
+            <p>AI analysis has not been generated for this report.</p>
+        <% } %>
+    </div>
+
+    <div class="eye-ai-conversation" id="eyeAiConversation" aria-live="polite"></div>
+    <form id="eyeAiChatForm">
+        <label class="eye-ai-field" for="eyeAiMessage">Ask a follow-up question</label>
+        <textarea id="eyeAiMessage" rows="3" maxlength="2000" disabled></textarea>
+        <div class="eye-ai-chat-actions">
+            <span class="eye-ai-chat-hint">Generate an interpretation before asking follow-up questions.</span>
+            <button class="btn" id="eyeAiSend" type="submit" disabled>Send question</button>
+        </div>
+    </form>
 </section>
 
 <% reportSections.forEach(section => { %>
@@ -99,6 +234,13 @@
     <p>If you have a health concern or persistent symptoms, discuss them with a qualified healthcare professional. Repeat measurements under similar conditions only as a descriptive personal comparison.</p>
 </section>
 
+<section class="card calendar-report-actions">
+    <h2>Plan a follow-up</h2>
+    <p>Choose whether to add a reminder to your BrainGuard calendar. Nothing is scheduled until you review and submit the event form.</p>
+    <a class="btn" href="/calendar/<%= assessment._id %>?new=brain_guard_assessment">Schedule next assessment</a>
+    <a class="eye-back-link" href="/calendar/<%= assessment._id %>?new=follow_up">Add follow-up reminder</a>
+</section>
+
 <a class="btn" href="/dashboard/<%= assessment._id %>">Continue to dashboard</a>
 <a class="eye-back-link" href="/history/<%= assessment._id %>">Assessment history</a>
 
@@ -106,8 +248,35 @@
     BrainGuard AI is a research prototype, not a medical device. No result in this report is a confirmed medical finding.
 </p>
 
+<section class="card eye-doctor-share" id="doctorReportShare">
+    <h2>Send Report to Doctor</h2>
+    <p>Prepare an email with the PDF report. BrainGuard will not send it automatically; you can review the draft, attach the downloaded PDF, and choose whether to send it.</p>
+    <form id="doctorShareForm">
+        <label class="eye-ai-field" for="doctorEmail">Doctor's email address</label>
+        <input id="doctorEmail" name="doctorEmail" type="email" maxlength="254" required>
+        <label class="eye-ai-consent">
+            <input id="doctorShareConsent" type="checkbox" required>
+            <span>I explicitly approve preparing this report for sharing with the doctor at the email address above. I will review the PDF and email before sending.</span>
+        </label>
+        <button class="btn" type="submit">Prepare email and download report</button>
+        <p id="doctorShareStatus" class="eye-ai-status" role="status" aria-live="polite"></p>
+    </form>
+</section>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script id="eye-report-data" type="application/json"><%- JSON.stringify(reportSections.map(section => ({ type: section.type, samples: section.samples }))).replace(/</g, "\\u003c") %></script>
+<script id="eyeAiInitialData" type="application/json"><%- JSON.stringify(aiAnalysis ? {
+    provider: aiAnalysis.provider,
+    summary: aiAnalysis.summary,
+    includesQuestionnaire: aiAnalysis.includesQuestionnaire === true,
+    baselineAvailable: aiAnalysis.baselineAvailable,
+    keyFindings: aiAnalysis.keyFindings,
+    baselineComparisons: aiAnalysis.baselineComparisons,
+    nextSteps: aiAnalysis.nextSteps,
+    limitations: aiAnalysis.limitations,
+    updatedAt: aiAnalysis.updatedAt,
+} : null).replace(/</g, "\\u003c") %></script>
+<script src="/js/eye-tests/report-chatbot.js?v=report-ai-4" defer></script>
 <script>
     const reportData = JSON.parse(document.getElementById("eye-report-data").textContent);
 

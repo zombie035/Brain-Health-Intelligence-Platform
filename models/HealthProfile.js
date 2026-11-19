@@ -10,8 +10,11 @@ const healthProfileSchema = new mongoose.Schema({
     },
 
     age: {
-        type: Number,
-        required: true
+        type: Number
+    },
+
+    ageRange: {
+        type: String
     },
 
     language: {
@@ -25,23 +28,45 @@ const healthProfileSchema = new mongoose.Schema({
     },
 
     sleepHours: {
-        type: Number,
-        required: true
+        type: Number
+    },
+
+    sleepDuration: {
+        type: String
     },
 
     exerciseMinutes: {
-        type: Number,
-        required: true
+        type: Number
+    },
+
+    activityLevel: {
+        type: String
     },
 
     stressLevel: {
-        type: Number,
-        required: true
+        type: Number
+    },
+
+    stressFrequency: {
+        type: String
     },
 
     familyHistory: {
         type: String,
         required: true
+    },
+
+    questionnaireVersion: {
+        type: Number
+    },
+
+    responses: {
+        type: [{
+            _id: false,
+            questionId: { type: String, required: true },
+            selectedOptions: { type: [String], required: true },
+        }],
+        default: []
     }
 }, {
     timestamps: true
