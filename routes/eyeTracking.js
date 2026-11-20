@@ -3,11 +3,11 @@ const mongoose = require("mongoose");
 
 const Assessment = require("../models/Assessment");
 const EyeTracking = require("../models/EyeTracking");
+const { getGazeMapConfig } = require("../services/gazeMapConfig");
 
 const router = express.Router();
 
-const GAZE_API =
-    process.env.GAZE_API_URL || "http://127.0.0.1:8001";
+const { apiUrl: GAZE_API } = getGazeMapConfig();
 
 // Tracks which GazeMap session was present before each new recording.
 // This prevents accidentally saving an older recording.

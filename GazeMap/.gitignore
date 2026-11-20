@@ -7,6 +7,8 @@ playground.py
 
 # Data and large artifacts (not in git)
 dataset/
+!dataset/
+!dataset/6 points-based face model.mat
 *.pt
 *.pth
 *.zip

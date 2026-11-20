@@ -47,9 +47,17 @@ python -m venv .venv
 .venv\Scripts\python -m uvicorn gaze_service:app --host 127.0.0.1 --port 8001
 ```
 
-Set `GAZE_API_URL` and `BRAINGUARD_ORIGINS` if the defaults are not appropriate for your setup. Unless explicitly set, `GAZE_WS_URL` follows the `GAZE_API_URL` host and uses `/ws/gaze`. GazeMap model files and the MediaPipe `face_landmarker.task` file may be downloaded on first run; see `GazeMap/README.md` if automatic downloads fail.
+Set `GAZE_SERVICE_URL` and `BRAINGUARD_ORIGINS` if the defaults are not appropriate for your setup. `GAZE_API_URL` remains supported as a legacy alias. Unless explicitly set, `GAZE_WS_URL` is derived from the service URL (`http` → `ws`, `https` → `wss`) and uses `/ws/gaze`. GazeMap model files and the MediaPipe `face_landmarker.task` file may be downloaded on first run; see `GazeMap/README.md` if automatic downloads fail.
 
 The browser opens the GazeMap WebSocket only after you start an assessment and grant camera permission. If the connection fails, confirm that GazeMap is running on the configured URL and that `BRAINGUARD_ORIGINS` includes the exact site origin (by default, `http://localhost:3000` and `http://127.0.0.1:3000`).
+
+### Deploy to Render
+
+Deploy BrainGuard and GazeMap as two separate Render Web Services. The Node service runs from the repository root with build command `npm install` and start command `npm start`. The Python service uses `GazeMap` as its root directory, build command `pip install -r requirements.txt`, and start command `uvicorn gaze_service:app --host 0.0.0.0 --port $PORT`. Set the Python service's `PYTHON_VERSION` to `3.12.10` to match the tested project environment. The checked-in `GazeMap/requirements.txt` already includes FastAPI, `uvicorn[standard]` (including WebSocket support), PyTorch, OpenCV, and MediaPipe; keep it intact for deployment.
+
+In the Node service environment, set `MONGODB_URI` and `GAZE_SERVICE_URL` to the deployed GazeMap service's HTTPS base URL, for example `https://your-gazemap-service.onrender.com` (no `/ws/gaze` suffix). Optionally set `GAZE_WS_URL` to its `wss://.../ws/gaze` endpoint; otherwise BrainGuard derives it from `GAZE_SERVICE_URL`. In the GazeMap service environment, set `BRAINGUARD_ORIGINS` to the exact public BrainGuard origin, such as `https://your-brainguard-site.onrender.com`, without a trailing slash. Add any custom domains you use as comma-separated origins. The browser connects directly to GazeMap over WebSocket, so setting only the server-to-server HTTP URL is not sufficient if the GazeMap origin allowlist is wrong.
+
+The small required face-model file at `GazeMap/dataset/6 points-based face model.mat` must be included in the repository; the root ignore rules allow that file while continuing to exclude the rest of the MPIIGaze dataset. GazeMap can download the trained model weights and MediaPipe face landmarker at startup, so the first deploy or restart may take longer and requires outbound access to their download hosts. Use the Render-assigned `PORT`; do not hardcode port 8001 in its start command. Render free services may sleep while idle, making the first health check or WebSocket attempt slow; use an always-on instance for predictable assessment startup. Confirm `https://your-gazemap-service.onrender.com/health` responds before testing from BrainGuard. Camera access also requires HTTPS on the deployed BrainGuard site.
 
 After all four eye assessments are complete, the consolidated report page offers a downloadable PDF containing the health profile, selected questionnaire answers and any available prior-session differences, measurements, calibration and tracking quality, observations, and limitations.
 

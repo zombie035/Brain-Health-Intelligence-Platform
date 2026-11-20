@@ -28,6 +28,8 @@ GazeMap/heatmaps/
 **/*.pth
 **/face_landmarker.task
 GazeMap/dataset/
+!GazeMap/dataset/
+!GazeMap/dataset/6 points-based face model.mat
 GazeMap/stimuli/
 GazeMap/models/
 

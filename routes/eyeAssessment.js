@@ -9,6 +9,7 @@ const MemoryEyeTracking = require("../models/MemoryEyeTracking");
 const EyeAssessmentAiAnalysis = require("../models/EyeAssessmentAiAnalysis");
 const EyeTracking = require("../models/EyeTracking");
 const HealthProfile = require("../models/HealthProfile");
+const { getGazeMapConfig } = require("../services/gazeMapConfig");
 const {
     ASSESSMENT_STEPS,
     getAssessmentProgress,
@@ -25,19 +26,7 @@ const {
 } = require("../services/healthQuestionnaire");
 
 const router = express.Router();
-const GAZE_API = (
-    process.env.GAZE_API_URL || "http://127.0.0.1:8001"
-).replace(/\/+$/, "");
-const defaultGazeWsUrl = new URL(GAZE_API);
-defaultGazeWsUrl.protocol = defaultGazeWsUrl.protocol === "https:"
-    ? "wss:"
-    : "ws:";
-defaultGazeWsUrl.username = "";
-defaultGazeWsUrl.password = "";
-defaultGazeWsUrl.pathname = "/ws/gaze";
-defaultGazeWsUrl.search = "";
-defaultGazeWsUrl.hash = "";
-const GAZE_WS = process.env.GAZE_WS_URL || defaultGazeWsUrl.toString();
+const { apiUrl: GAZE_API, websocketUrl: GAZE_WS } = getGazeMapConfig();
 const assessmentTypeByPath = new Map([
     ["saccadic", "saccadic"],
     ["smooth-pursuit", "smooth_pursuit"],
